@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Route } from 'react-router-dom';
 import {
   IonApp,
-  IonButton,
+  IonIcon,
   IonLabel,
   IonRouterOutlet,
   IonTabBar,
@@ -11,12 +11,14 @@ import {
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
+import { home, chatbubbleEllipses, barbell, personCircle } from 'ionicons/icons';
 import { AuthProvider } from './context/AuthContext';
 import { Chat } from './pages/Chat';
 import { Home } from './pages/Home';
 import { Profile } from './pages/Profile';
 import { Training } from './pages/Training';
 import { Login } from './pages/Login';
+import { Settings } from './pages/Settings';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -42,8 +44,9 @@ import '@ionic/react/css/display.css';
  */
 
 /* import '@ionic/react/css/palettes/dark.always.css'; */
-/* import '@ionic/react/css/palettes/dark.class.css'; */
-// import '@ionic/react/css/palettes/dark.system.css';
+import '@ionic/react/css/palettes/dark.class.css';
+/* import '@ionic/react/css/palettes/dark.system.css'; */
+
 
 /* Theme variables */
 import './theme/variables.css';
@@ -51,38 +54,8 @@ import './theme/variables.css';
 setupIonicReact();
 
 const App: React.FC = () => {
-    const [theme, setTheme] = useState('light');
-
-    useEffect(() => {
-        const savedTheme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (savedTheme) {
-            setTheme(savedTheme);
-        } else if (prefersDark) {
-            setTheme('dark');
-        }
-    }, []);
-
-    useEffect(() => {
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-        localStorage.setItem('theme', theme);
-    }, [theme]);
-
-    const toggleTheme = () => {
-        setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
-    };
-
     return (
         <IonApp>
-            <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 1000 }}>
-                <IonButton onClick={toggleTheme}>
-                    Toggle Theme
-                </IonButton>
-            </div>
             <AuthProvider>
                 <IonReactRouter>
                     <IonTabs>
@@ -92,18 +65,23 @@ const App: React.FC = () => {
                             <Route path="/chat" component={Chat} />
                             <Route path="/profile" component={Profile} />
                             <Route path="/training" component={Training} />
+                            <Route path="/settings" component={Settings} />
                         </IonRouterOutlet>
                         <IonTabBar slot="bottom">
                             <IonTabButton tab="home" href="/">
+                                <IonIcon icon={home} />
                                 <IonLabel>Home</IonLabel>
                             </IonTabButton>
                             <IonTabButton tab="chat" href="/chat">
+                                <IonIcon icon={chatbubbleEllipses} />
                                 <IonLabel>AI Coach</IonLabel>
                             </IonTabButton>
                             <IonTabButton tab="training" href="/training">
+                                <IonIcon icon={barbell} />
                                 <IonLabel>Training</IonLabel>
                             </IonTabButton>
                             <IonTabButton tab="profile" href="/profile">
+                                <IonIcon icon={personCircle} />
                                 <IonLabel>Profile</IonLabel>
                             </IonTabButton>
                         </IonTabBar>
