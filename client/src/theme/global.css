@@ -1,0 +1,35 @@
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 20px;
+}
+
+ion-content {
+    --background: white;
+}
+
+.chat-input {
+    --background: transparent;
+}
+
+.chat-input-container {
+    background: white;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.send-button {
+    --background: transparent;
+    --background-activated: transparent;
+    --background-focused: transparent;
+    --background-hover: transparent;
+    --box-shadow: none;
+    --padding-start: 0px;
+    --padding-end: 0px;
+}
+
+.send-button ion-icon {
+    color: #1a73b3;
+}
