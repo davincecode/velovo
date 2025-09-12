@@ -1,14 +1,14 @@
 import React from 'react';
-import { Route } from 'react-router-dom';
+import { Redirect, Route } from 'react-router-dom';
 import {
-  IonApp,
-  IonIcon,
-  IonLabel,
-  IonRouterOutlet,
-  IonTabBar,
-  IonTabButton,
-  IonTabs,
-  setupIonicReact
+    IonApp,
+    IonIcon,
+    IonLabel,
+    IonRouterOutlet,
+    IonTabBar,
+    IonTabButton,
+    IonTabs,
+    setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { home, chatbubbleEllipses, barbell, personCircle } from 'ionicons/icons';
@@ -36,17 +36,9 @@ import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
-
 /* import '@ionic/react/css/palettes/dark.always.css'; */
 import '@ionic/react/css/palettes/dark.class.css';
 /* import '@ionic/react/css/palettes/dark.system.css'; */
-
 
 /* Theme variables */
 import './theme/variables.css';
@@ -61,14 +53,17 @@ const App: React.FC = () => {
                     <IonTabs>
                         <IonRouterOutlet>
                             <Route path="/login" component={Login} />
-                            <Route exact path="/" component={Home} />
+                            <Route exact path="/home" component={Home} />
                             <Route path="/chat" component={Chat} />
                             <Route path="/profile" component={Profile} />
                             <Route path="/training" component={Training} />
                             <Route path="/settings" component={Settings} />
+                            <Route exact path="/">
+                                <Redirect to="/home" />
+                            </Route>
                         </IonRouterOutlet>
-                        <IonTabBar slot="bottom">
-                            <IonTabButton tab="home" href="/">
+                        <IonTabBar slot="bottom" className="tab-bar-safe-area">
+                            <IonTabButton tab="home" href="/home">
                                 <IonIcon icon={home} />
                                 <IonLabel>Home</IonLabel>
                             </IonTabButton>

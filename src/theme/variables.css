@@ -150,3 +150,21 @@ body.dark {
 
   --ion-item-background: #1e1e1e;
 }
+
+ion-tab-button.tab-selected ion-icon {
+  color: var(--ion-color-primary);
+}
+
+/* Remove box shadow from headers */
+ion-header {
+    box-shadow: none !important;
+}
+
+ion-toolbar {
+    --box-shadow: none;
+}
+
+/* For headers inside content areas */
+ion-header ion-toolbar {
+    --box-shadow: none;
+}
