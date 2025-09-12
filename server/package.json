@@ -1,0 +1,21 @@
+{
+  "name": "velovo-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "dotenvx run -- node server.js",
+    "dev": "dotenvx run -- nodemon server.js"
+  },
+  "private": true,
+  "dependencies": {
+    "@dotenvx/dotenvx": "^1.49.0",
+    "axios": "^1.12.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "nodemon": "^3.1.10"
+  }
+}

@@ -1,7 +1,0 @@
-{
-  "name": "velovo",
-  "integrations": {
-    "capacitor": {}
-  },
-  "type": "react-vite"
-}
