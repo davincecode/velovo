@@ -12,18 +12,25 @@ interface AuthState {
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-    const [user, setUser] = useState<UserProfile | undefined>();
+    const [user, setUser] = useState<UserProfile | undefined>(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            try {
+                return JSON.parse(storedUser);
+            } catch {
+                localStorage.removeItem('user');
+            }
+        }
+        return undefined;
+    });
     const auth = getAuth(app);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser: User | null) => {
             if (firebaseUser) {
-                // This is a simplified profile. In a real app, you'd fetch your own backend's user profile.
                 const userProfile: UserProfile = {
                     id: firebaseUser.uid,
                     name: firebaseUser.displayName || firebaseUser.email || 'User',
-                    // 'discipline' is not part of the default Firebase user object.
-                    // You might need to store and retrieve this from your own database.
                 };
                 setUser(userProfile);
                 localStorage.setItem('user', JSON.stringify(userProfile));
@@ -38,12 +45,12 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
 
     const login = async (email: string, password: string) => {
         await signInWithEmailAndPassword(auth, email, password);
-        // onAuthStateChanged will handle setting the user.
+        // onAuthStateChanged will handle setting the user state and navigating.
     };
 
     const logout = async () => {
         await signOut(auth);
-        // onAuthStateChanged will handle clearing the user.
+        // onAuthStateChanged will handle clearing the user state.
     };
 
     return (

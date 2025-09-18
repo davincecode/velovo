@@ -1,5 +1,5 @@
 import React from 'react';
-import { Redirect, Route } from 'react-router-dom';
+import { Redirect, Route, Switch } from 'react-router-dom';
 import {
     IonApp,
     IonIcon,
@@ -38,60 +38,59 @@ import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
-/* import '@ionic/react/css/palettes/dark.always.css'; */
-import '@ionic/react/css/palettes/dark.class.css';
-/* import '@ionic/react/css/palettes/dark.system.css'; */
-
 /* Theme variables */
 import './theme/variables.css';
 
 setupIonicReact();
 
-const AppContent: React.FC = () => {
-    const { user } = useAuth(); // Use the auth context
-
-    if (!user) {
-        return (
-            <IonRouterOutlet>
-                <Route path="/login" component={Login} exact={true} />
-                <Route path="/register" component={Registration} exact={true} />
-                <Route path="/forgot-password" component={ForgotPassword} exact={true} />
-                <Redirect to="/login" />
-            </IonRouterOutlet>
-        );
-    }
-
-    return (
-        <IonTabs>
-            <IonRouterOutlet>
-                <Route exact path="/home" component={Home} />
+const Tabs: React.FC = () => (
+    <IonTabs>
+        <IonRouterOutlet>
+            <Switch>
+                <Route path="/home" component={Home} exact={true} />
                 <Route path="/chat" component={Chat} />
                 <Route path="/profile" component={Profile} />
                 <Route path="/training" component={Training} />
                 <Route path="/settings" component={Settings} />
-                <Route exact path="/">
-                    <Redirect to="/home" />
-                </Route>
-            </IonRouterOutlet>
-            <IonTabBar slot="bottom" className="tab-bar-safe-area">
-                <IonTabButton tab="home" href="/home">
-                    <IonIcon icon={home} />
-                    <IonLabel>Home</IonLabel>
-                </IonTabButton>
-                <IonTabButton tab="chat" href="/chat">
-                    <IonIcon icon={chatbubbleEllipses} />
-                    <IonLabel>AI Coach</IonLabel>
-                </IonTabButton>
-                <IonTabButton tab="training" href="/training">
-                    <IonIcon icon={barbell} />
-                    <IonLabel>Training</IonLabel>
-                </IonTabButton>
-                <IonTabButton tab="profile" href="/profile">
-                    <IonIcon icon={personCircle} />
-                    <IonLabel>Profile</IonLabel>
-                </IonTabButton>
-            </IonTabBar>
-        </IonTabs>
+                <Redirect from="/" to="/home" exact />
+            </Switch>
+        </IonRouterOutlet>
+        <IonTabBar slot="bottom" className="tab-bar-safe-area">
+            <IonTabButton tab="home" href="/home">
+                <IonIcon icon={home} />
+                <IonLabel>Home</IonLabel>
+            </IonTabButton>
+            <IonTabButton tab="chat" href="/chat">
+                <IonIcon icon={chatbubbleEllipses} />
+                <IonLabel>AI Coach</IonLabel>
+            </IonTabButton>
+            <IonTabButton tab="training" href="/training">
+                <IonIcon icon={barbell} />
+                <IonLabel>Training</IonLabel>
+            </IonTabButton>
+            <IonTabButton tab="profile" href="/profile">
+                <IonIcon icon={personCircle} />
+                <IonLabel>Profile</IonLabel>
+            </IonTabButton>
+        </IonTabBar>
+    </IonTabs>
+);
+
+const AppContent: React.FC = () => {
+    const { user } = useAuth();
+
+    return (
+        <IonRouterOutlet>
+            <Switch>
+                {/* Public routes that redirect if user is logged in */}
+                <Route path="/login" exact={true} render={() => user ? <Redirect to="/home" /> : <Login />} />
+                <Route path="/register" exact={true} render={() => user ? <Redirect to="/home" /> : <Registration />} />
+                <Route path="/forgot-password" exact={true} render={() => user ? <Redirect to="/home" /> : <ForgotPassword />} />
+
+                {/* Private route catch-all */}
+                <Route path="/" render={() => user ? <Tabs /> : <Redirect to="/login" />} />
+            </Switch>
+        </IonRouterOutlet>
     );
 };
 

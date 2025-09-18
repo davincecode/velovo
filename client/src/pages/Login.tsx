@@ -14,6 +14,7 @@ const Login: React.FC = () => {
         setError('');
         try {
             await login(email, password);
+            history.push('/home'); // Redirect after successful login
         } catch (err: any) {
             setError('Invalid login credentials. Please try again.');
             console.error('Login failed:', err);

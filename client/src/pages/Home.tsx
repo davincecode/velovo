@@ -7,12 +7,13 @@ import '../theme/global.css';
 
 
 export const Home: React.FC = () => {
-    const { user, stravaAccessToken } = useAuth();
+    // const { user, stravaAccessToken } = useAuth();
+    const { user } = useAuth();
     const [activities, setActivities] = useState<any[]>([]);
-    useEffect(() => {
-        if (!stravaAccessToken) return;
-        StravaService.fetchActivities(stravaAccessToken).then(setActivities).catch(err=>console.error(err));
-    }, [stravaAccessToken]);
+    // useEffect(() => {
+    //     if (!stravaAccessToken) return;
+    //     StravaService.fetchActivities(stravaAccessToken).then(setActivities).catch(err=>console.error(err));
+    // }, [stravaAccessToken]);
 
 
     return (
