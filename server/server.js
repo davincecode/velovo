@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { config } from './src/config/env.js';
+import config from './src/config/config.js'; // Import config
 import authRoutes from './src/routes/auth.js';
 import aiRoutes from './src/routes/ai.js';
 
