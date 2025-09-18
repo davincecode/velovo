@@ -1,24 +1,60 @@
-import React from 'react';
-import { IonPage, IonContent, IonButton, IonHeader, IonTitle, IonToolbar } from '@ionic/react';
+import React, { useState } from 'react';
+import { IonPage, IonContent, IonButton, IonHeader, IonTitle, IonToolbar, IonInput, IonItem, IonLabel, IonList, IonText } from '@ionic/react';
 import { useAuth } from '../context/AuthContext';
+import { useHistory } from 'react-router-dom';
 
+const Login: React.FC = () => {
+    const { login } = useAuth();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const history = useHistory();
 
-export const Login: React.FC = () => {
-    const { login, setStravaToken } = useAuth() as any;
-    const demoLogin = () => {
-        login({ id: 'demo', name: 'Demo Athlete', discipline: 'cycling' });
+    const handleLogin = async () => {
+        setError('');
+        try {
+            await login(email, password);
+        } catch (err: any) {
+            setError('Invalid login credentials. Please try again.');
+            console.error('Login failed:', err);
+        }
     };
-    const connectStrava = () => {
-// In production: redirect to your server which starts the OAuth flow.
-        alert('Redirect to Strava OAuth (implement server-side)');
-    };
+
     return (
         <IonPage>
-            <IonHeader><IonToolbar><IonTitle>Login</IonTitle></IonToolbar></IonHeader>
+            <IonHeader>
+                <IonToolbar>
+                    <IonTitle>Login</IonTitle>
+                </IonToolbar>
+            </IonHeader>
             <IonContent className="ion-padding">
-                <IonButton expand="block" color="primary" onClick={demoLogin}>Continue as Demo</IonButton>
-                <IonButton expand="block" color="tertiary" onClick={connectStrava}>Connect Strava</IonButton>
+                <IonList>
+                    <IonItem>
+                        <IonLabel position="floating">Email</IonLabel>
+                        <IonInput type="email" value={email} onIonChange={e => setEmail(e.detail.value!)} />
+                    </IonItem>
+                    <IonItem>
+                        <IonLabel position="floating">Password</IonLabel>
+                        <IonInput type="password" value={password} onIonChange={e => setPassword(e.detail.value!)} />
+                    </IonItem>
+                </IonList>
+                {error && (
+                    <IonText color="danger">
+                        <p style={{ paddingLeft: '16px', paddingTop: '8px' }}>{error}</p>
+                    </IonText>
+                )}
+                <IonButton expand="block" color="primary" onClick={handleLogin} style={{ marginTop: '20px' }}>
+                    Login
+                </IonButton>
+                <IonButton expand="block" fill="clear" onClick={() => history.push('/register')}>
+                    Don't have an account? Register
+                </IonButton>
+                <IonButton expand="block" fill="clear" onClick={() => history.push('/forgot-password')}>
+                    Forgot Password?
+                </IonButton>
             </IonContent>
         </IonPage>
     );
 };
+
+export default Login;

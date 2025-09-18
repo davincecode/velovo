@@ -14,7 +14,4 @@ app.use(cors({ origin: config.APP_CLIENT_ORIGIN, credentials: true }));
 app.use('/auth', authRoutes);
 app.use('/api/ai', aiRoutes);
 
-app.listen = function (PORT, param2) {
-    
-};
 app.listen(config.PORT, () => console.log(`Server listening on ${config.PORT}`));

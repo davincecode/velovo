@@ -12,13 +12,15 @@ import {
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { home, chatbubbleEllipses, barbell, personCircle } from 'ionicons/icons';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Chat } from './pages/Chat';
 import { Home } from './pages/Home';
 import { Profile } from './pages/Profile';
 import { Training } from './pages/Training';
-import { Login } from './pages/Login';
+import Login from './pages/Login';
 import { Settings } from './pages/Settings';
+import Registration from './pages/Registration';
+import ForgotPassword from './pages/ForgotPassword';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -45,46 +47,62 @@ import './theme/variables.css';
 
 setupIonicReact();
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+    const { user } = useAuth(); // Use the auth context
+
+    if (!user) {
+        return (
+            <IonRouterOutlet>
+                <Route path="/login" component={Login} exact={true} />
+                <Route path="/register" component={Registration} exact={true} />
+                <Route path="/forgot-password" component={ForgotPassword} exact={true} />
+                <Redirect to="/login" />
+            </IonRouterOutlet>
+        );
+    }
+
     return (
-        <IonApp>
-            <AuthProvider>
-                <IonReactRouter>
-                    <IonTabs>
-                        <IonRouterOutlet>
-                            <Route path="/login" component={Login} />
-                            <Route exact path="/home" component={Home} />
-                            <Route path="/chat" component={Chat} />
-                            <Route path="/profile" component={Profile} />
-                            <Route path="/training" component={Training} />
-                            <Route path="/settings" component={Settings} />
-                            <Route exact path="/">
-                                <Redirect to="/home" />
-                            </Route>
-                        </IonRouterOutlet>
-                        <IonTabBar slot="bottom" className="tab-bar-safe-area">
-                            <IonTabButton tab="home" href="/home">
-                                <IonIcon icon={home} />
-                                <IonLabel>Home</IonLabel>
-                            </IonTabButton>
-                            <IonTabButton tab="chat" href="/chat">
-                                <IonIcon icon={chatbubbleEllipses} />
-                                <IonLabel>AI Coach</IonLabel>
-                            </IonTabButton>
-                            <IonTabButton tab="training" href="/training">
-                                <IonIcon icon={barbell} />
-                                <IonLabel>Training</IonLabel>
-                            </IonTabButton>
-                            <IonTabButton tab="profile" href="/profile">
-                                <IonIcon icon={personCircle} />
-                                <IonLabel>Profile</IonLabel>
-                            </IonTabButton>
-                        </IonTabBar>
-                    </IonTabs>
-                </IonReactRouter>
-            </AuthProvider>
-        </IonApp>
+        <IonTabs>
+            <IonRouterOutlet>
+                <Route exact path="/home" component={Home} />
+                <Route path="/chat" component={Chat} />
+                <Route path="/profile" component={Profile} />
+                <Route path="/training" component={Training} />
+                <Route path="/settings" component={Settings} />
+                <Route exact path="/">
+                    <Redirect to="/home" />
+                </Route>
+            </IonRouterOutlet>
+            <IonTabBar slot="bottom" className="tab-bar-safe-area">
+                <IonTabButton tab="home" href="/home">
+                    <IonIcon icon={home} />
+                    <IonLabel>Home</IonLabel>
+                </IonTabButton>
+                <IonTabButton tab="chat" href="/chat">
+                    <IonIcon icon={chatbubbleEllipses} />
+                    <IonLabel>AI Coach</IonLabel>
+                </IonTabButton>
+                <IonTabButton tab="training" href="/training">
+                    <IonIcon icon={barbell} />
+                    <IonLabel>Training</IonLabel>
+                </IonTabButton>
+                <IonTabButton tab="profile" href="/profile">
+                    <IonIcon icon={personCircle} />
+                    <IonLabel>Profile</IonLabel>
+                </IonTabButton>
+            </IonTabBar>
+        </IonTabs>
     );
 };
+
+const App: React.FC = () => (
+    <IonApp>
+        <IonReactRouter>
+            <AuthProvider>
+                <AppContent />
+            </AuthProvider>
+        </IonReactRouter>
+    </IonApp>
+);
 
 export default App;

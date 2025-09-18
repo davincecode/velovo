@@ -1,66 +1,68 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonDatetime } from '@ionic/react';
 import React, { useState } from 'react';
+import { IonPage, IonContent, IonButton, IonHeader, IonTitle, IonToolbar, IonInput, IonItem, IonLabel, IonList, IonText, IonButtons, IonBackButton } from '@ionic/react';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { useHistory } from 'react-router-dom';
+import app from '../services/firebase';
 
 const Registration: React.FC = () => {
-  const [gender, setGender] = useState<string>();
-  const [dob, setDob] = useState<string>();
-  const [weight, setWeight] = useState<number>();
-  const [ridingLevel, setRidingLevel] = useState<string>();
-  const [trainingHours, setTrainingHours] = useState<number>();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [error, setError] = useState('');
+    const history = useHistory();
+    const auth = getAuth(app);
 
-  return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Registration</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent fullscreen>
-        <IonHeader collapse="condense">
-          <IonToolbar>
-            <IonTitle size="large">Registration</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-        <form>
-          <IonList>
-            <IonItem>
-              <IonLabel>Gender</IonLabel>
-              <IonSelect value={gender} placeholder="Select One" onIonChange={e => setGender(e.detail.value)}>
-                <IonSelectOption value="female">Female</IonSelectOption>
-                <IonSelectOption value="male">Male</IonSelectOption>
-                <IonSelectOption value="other">Other</IonSelectOption>
-              </IonSelect>
-            </IonItem>
-            <IonItem>
-              <IonLabel>Date of Birth</IonLabel>
-              <IonDatetime presentation="date" value={dob} onIonChange={e => {
-                if (typeof e.detail.value === 'string') {
-                  setDob(e.detail.value);
-                }
-              }}></IonDatetime>
-            </IonItem>
-            <IonItem>
-              <IonLabel>Weight (kg)</IonLabel>
-              <IonInput type="number" value={weight} placeholder="Enter Weight" onIonChange={e => setWeight(parseInt(e.detail.value!, 10))}></IonInput>
-            </IonItem>
-            <IonItem>
-              <IonLabel>Riding Level</IonLabel>
-              <IonSelect value={ridingLevel} placeholder="Select Level" onIonChange={e => setRidingLevel(e.detail.value)}>
-                <IonSelectOption value="beginner">Beginner</IonSelectOption>
-                <IonSelectOption value="intermediate">Intermediate</IonSelectOption>
-                <IonSelectOption value="advanced">Advanced</IonSelectOption>
-                <IonSelectOption value="pro">Pro</IonSelectOption>
-              </IonSelect>
-            </IonItem>
-            <IonItem>
-              <IonLabel>Weekly Training Hours</IonLabel>
-              <IonInput type="number" value={trainingHours} placeholder="Enter Hours" onIonChange={e => setTrainingHours(parseInt(e.detail.value!, 10))}></IonInput>
-            </IonItem>
-          </IonList>
-        </form>
-      </IonContent>
-    </IonPage>
-  );
+    const handleRegister = async () => {
+        if (password !== confirmPassword) {
+            setError('Passwords do not match.');
+            return;
+        }
+        setError('');
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            history.push('/login'); // Redirect to login after successful registration
+        } catch (err: any) {
+            setError(err.message);
+            console.error('Registration failed:', err);
+        }
+    };
+
+    return (
+        <IonPage>
+            <IonHeader>
+                <IonToolbar>
+                    <IonButtons slot="start">
+                        <IonBackButton defaultHref="/login" />
+                    </IonButtons>
+                    <IonTitle>Register</IonTitle>
+                </IonToolbar>
+            </IonHeader>
+            <IonContent className="ion-padding">
+                <IonList>
+                    <IonItem>
+                        <IonLabel position="floating">Email</IonLabel>
+                        <IonInput type="email" value={email} onIonChange={e => setEmail(e.detail.value!)} />
+                    </IonItem>
+                    <IonItem>
+                        <IonLabel position="floating">Password</IonLabel>
+                        <IonInput type="password" value={password} onIonChange={e => setPassword(e.detail.value!)} />
+                    </IonItem>
+                    <IonItem>
+                        <IonLabel position="floating">Confirm Password</IonLabel>
+                        <IonInput type="password" value={confirmPassword} onIonChange={e => setConfirmPassword(e.detail.value!)} />
+                    </IonItem>
+                </IonList>
+                {error && (
+                    <IonText color="danger">
+                        <p style={{ paddingLeft: '16px', paddingTop: '8px' }}>{error}</p>
+                    </IonText>
+                )}
+                <IonButton expand="block" color="primary" onClick={handleRegister} style={{ marginTop: '20px' }}>
+                    Register
+                </IonButton>
+            </IonContent>
+        </IonPage>
+    );
 };
 
 export default Registration;
