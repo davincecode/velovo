@@ -4,16 +4,16 @@ import { send as sendIcon } from 'ionicons/icons';
 import { ChatBubble } from '../components/ChatBubble';
 import { useAuth } from '../context/AuthContext';
 import { AIService } from '../services/AIService';
-import { db } from '../services/firebase'; // Import db from your firebase config
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { db } from '../services/firebase';
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { UserProfile } from '../userProfile';
 import '../theme/global.css';
-
 
 interface ChatMessage {
     id?: string;
     role: 'user' | 'assistant';
     content: string;
-    timestamp: any; // Use any for serverTimestamp for now, will be a Firebase Timestamp
+    timestamp: any;
 }
 
 export const Chat: React.FC = () => {
@@ -21,26 +21,35 @@ export const Chat: React.FC = () => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(true);
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
-    const userId = user?.id; // Get the current user's ID
-
-    console.log('Chat.tsx: Current user object:', user);
-    console.log('Chat.tsx: Current userId:', userId);
+    const userId = user?.id;
 
     useEffect(() => {
-        console.log('Chat.tsx: useEffect triggered. userId:', userId);
         if (!userId) {
-            console.log('Chat.tsx: No userId found, returning early from useEffect.');
-            // If there's no user, we should stop loading but show an appropriate message
             setLoading(false);
             return;
         }
 
+        // Fetch user profile
+        const fetchUserProfile = async () => {
+            const userDocRef = doc(db, 'users', userId);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+                setUserProfile(userDocSnap.data() as UserProfile);
+                console.log("Chat.tsx: User profile fetched.");
+            } else {
+                console.log("Chat.tsx: User profile not found.");
+            }
+        };
+
+        fetchUserProfile();
+
+        // Subscribe to messages
         const messagesCollectionRef = collection(db, `users/${userId}/messages`);
         const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            console.log('Chat.tsx: onSnapshot triggered. Messages received:', snapshot.docs.length);
             const fetchedMessages: ChatMessage[] = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data() as Omit<ChatMessage, 'id'>
@@ -48,52 +57,42 @@ export const Chat: React.FC = () => {
             setMessages(fetchedMessages);
             setLoading(false);
         }, (error) => {
-            console.error("Chat.tsx: Error fetching messages from Firestore: ", error);
+            console.error("Chat.tsx: Error fetching messages: ", error);
             setLoading(false);
         });
 
-        return () => {
-            console.log('Chat.tsx: Cleaning up onSnapshot listener.');
-            unsubscribe();
-        };
+        return () => unsubscribe();
     }, [userId]);
 
     const handleSend = async () => {
-        if (!text.trim() || !userId) {
-            console.warn('Chat.tsx: Cannot send message. Text is empty or userId is missing.');
-            return;
-        }
+        if (!text.trim() || !userId) return;
 
         const userMsg: ChatMessage = { role: 'user', content: text, timestamp: serverTimestamp() };
-        // Optimistically add message to UI
         setMessages(m => [...m, userMsg]);
         setText('');
 
         try {
-            // Add user message to Firestore
             await addDoc(collection(db, `users/${userId}/messages`), userMsg);
-            console.log('Chat.tsx: User message added to Firestore.');
 
-            const systemPrompt = `You are an AI coach for athletes. Use profile: ${JSON.stringify(user)}.`;
+            // Construct the detailed system prompt with the user's profile
+            let systemPrompt = 'You are a world-class cycling coach. Be encouraging and provide actionable advice.';
+            if (userProfile) {
+                systemPrompt += `\n\nHere is the athlete\'s profile:\n${JSON.stringify(userProfile, null, 2)}`;
+                systemPrompt += '\n\nWhen answering, consider all aspects of their profile, from their goals and bike setup to their performance metrics and lifestyle. If you need more information to provide the best advice, ask clarifying questions.';
+            }
 
-            // Call AI service with all current messages (including the new user message)
             const currentMessagesForAI = messages.map(m => ({ role: m.role, content: m.content }));
             const reply = await AIService.chat(systemPrompt, [...currentMessagesForAI, { role: userMsg.role, content: userMsg.content }]);
-            const assistantText = reply?.text ?? 'Sorry, I could not answer.';
-            console.log('Chat.tsx: AI service replied.');
+            const assistantText = reply?.text ?? 'Sorry, I could not provide a response.';
 
             const assistantMsg: ChatMessage = { role: 'assistant', content: assistantText, timestamp: serverTimestamp() };
-            // Add assistant message to Firestore
             await addDoc(collection(db, `users/${userId}/messages`), assistantMsg);
-            console.log('Chat.tsx: Assistant message added to Firestore.');
 
         } catch (error) {
-            console.error("Chat.tsx: AI message or Firestore write error: ", error);
-            // If AI call or Firestore write fails, you might want to revert the optimistic update
-            // or show an error message.
-            setMessages(m => m.filter(msg => msg !== userMsg)); // Remove optimistic update if it failed
-            // Add an error message to the chat
-            setMessages(m => [...m, { role: 'assistant', content: 'AI service error.', timestamp: serverTimestamp() }]);
+            console.error("Chat.tsx: Error during message send or AI reply: ", error);
+            setMessages(m => m.filter(msg => msg !== userMsg));
+            const errorMsg: ChatMessage = { role: 'assistant', content: 'Sorry, I ran into an error.', timestamp: serverTimestamp() };
+            setMessages(m => [...m, errorMsg]);
         }
     };
 
@@ -111,10 +110,16 @@ export const Chat: React.FC = () => {
                     )}
                 </div>
             </IonContent>
-            <IonFooter className="chat-input-container">
-                <div className="flex items-center ion-padding">
-                    <IonTextarea value={text} placeholder="Ask your coach..." onIonChange={e => setText((e.target as any).value)} className="chat-input" autoGrow={true} />
-                    <IonButton onClick={handleSend} shape="round" className="send-button">
+            <IonFooter className="ion-no-border chat-footer">
+                <div className="chat-input-wrapper">
+                    <IonTextarea
+                        value={text}
+                        placeholder="Ask your coach..."
+                        onIonChange={e => setText((e.target as any).value)}
+                        className="chat-textarea"
+                        autoGrow={true}
+                    />
+                    <IonButton onClick={handleSend} shape="round" className="chat-send-button">
                         <IonIcon icon={sendIcon} />
                     </IonButton>
                 </div>

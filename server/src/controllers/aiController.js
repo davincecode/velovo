@@ -1,4 +1,5 @@
 import axios from 'axios';
+import config from '../config/config.js'; // Import the configuration
 
 export const handleChatRequest = async (req, res) => {
     const { systemPrompt, messages } = req.body;

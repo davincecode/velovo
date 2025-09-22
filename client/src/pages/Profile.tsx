@@ -19,14 +19,17 @@ import {
   IonCard,
   IonCardHeader,
   IonCardTitle,
-  IonCardContent
+  IonCardContent,
+  IonSpinner
 } from '@ionic/react';
 import { useAuth } from '../context/AuthContext';
 import { cog, trash, chevronDown, chevronUp } from 'ionicons/icons';
 import { updateUserProfile } from '../services/userService';
 import { UserProfile, BikeSetup } from '../userProfile';
+import { db } from '../services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
-// Sample data to pre-fill the form
+// Sample data to pre-fill the form for new users
 const sampleData: UserProfile = {
   "basic_info": {
     "name": "Vincent",
@@ -159,29 +162,62 @@ const setNestedValue = (obj: any, path: string, value: any) => {
 
 export const Profile: React.FC = () => {
   const { user } = useAuth();
-  const [profileData, setProfileData] = useState<UserProfile>(sampleData);
+  const [profileData, setProfileData] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
   const [bikeCardVisibility, setBikeCardVisibility] = useState<boolean[]>([]);
 
   useEffect(() => {
-    setBikeCardVisibility(profileData.bike_setup.map(() => true));
-  }, [profileData.bike_setup.length]);
+    const fetchUserProfile = async () => {
+      if (!user?.id) {
+        setProfileData(sampleData); // For a new/logged-out user, show the template
+        setLoading(false);
+        return;
+      }
+
+      const userDocRef = doc(db, 'users', user.id);
+      try {
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          setProfileData(userDocSnap.data() as UserProfile);
+        } else {
+          setProfileData(sampleData);
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+        setProfileData(sampleData); // Fallback to sample data on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (profileData?.bike_setup) {
+      setBikeCardVisibility(profileData.bike_setup.map(() => true));
+    }
+  }, [profileData?.bike_setup.length]);
 
   const handleInputChange = (path: string, value: any, type: 'string' | 'string[]' | 'number' = 'string') => {
+    if (!profileData) return;
     let processedValue: any = value;
     if (type === 'string[]' && typeof value === 'string') {
       processedValue = (value || '').split(',').map((s:string) => s.trim());
     } else if (type === 'number') {
       processedValue = parseFloat(value) || 0;
     }
-    setProfileData(prevData => setNestedValue(prevData, path, processedValue));
+    setProfileData(prevData => setNestedValue(prevData!, path, processedValue));
   };
 
   const addBike = () => {
+    if (!profileData) return;
     const newBikeSetup = [...profileData.bike_setup, NEW_BIKE];
     setProfileData({ ...profileData, bike_setup: newBikeSetup });
   };
 
   const removeBike = (index: number) => {
+    if (!profileData) return;
     const newBikeSetup = profileData.bike_setup.filter((_, i) => i !== index);
     setProfileData({ ...profileData, bike_setup: newBikeSetup });
   };
@@ -198,6 +234,10 @@ export const Profile: React.FC = () => {
       alert('You must be logged in to update your profile. Your user ID is missing.');
       return;
     }
+    if (!profileData) {
+        alert('Profile data is not loaded yet.');
+        return;
+    }
     try {
       await updateUserProfile(user.id, profileData);
       alert('Profile updated successfully!');
@@ -206,6 +246,21 @@ export const Profile: React.FC = () => {
       alert('Failed to update profile.');
     }
   };
+
+  if (loading || !profileData) {
+    return (
+      <IonPage>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Edit Profile</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding" style={{ textAlign: 'center' }}>
+          <IonSpinner />
+        </IonContent>
+      </IonPage>
+    );
+  }
 
   return (
     <IonPage>
