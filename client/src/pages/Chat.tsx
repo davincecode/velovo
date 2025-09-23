@@ -22,6 +22,7 @@ export const Chat: React.FC = () => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(true);
+    const [isCoachTyping, setIsCoachTyping] = useState(false);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [presentAlert] = useIonAlert();
 
@@ -86,32 +87,35 @@ export const Chat: React.FC = () => {
 
     const handleSend = async () => {
         if (!text.trim() || !userId) return;
-
+    
         const userMsg: ChatMessage = { role: 'user', content: text, timestamp: serverTimestamp() };
         setMessages(m => [...m, userMsg]);
         setText('');
-
+        setIsCoachTyping(true);
+    
         try {
             await addDoc(collection(db, `users/${userId}/messages`), userMsg);
-
+    
             let systemPrompt = 'You are a world-class cycling coach. Be encouraging and provide actionable advice.';
             if (userProfile) {
                 systemPrompt += `\n\nHere is the athlete\'s profile:\n${JSON.stringify(userProfile, null, 2)}`;
                 systemPrompt += '\n\nWhen answering, consider all aspects of their profile. If you need more information, ask clarifying questions.';
             }
-
+    
             const currentMessagesForAI = messages.map(m => ({ role: m.role, content: m.content }));
             const reply = await AIService.chat(systemPrompt, [...currentMessagesForAI, { role: userMsg.role, content: userMsg.content }]);
             const assistantText = reply?.text ?? 'Sorry, I could not provide a response.';
-
+    
             const assistantMsg: ChatMessage = { role: 'assistant', content: assistantText, timestamp: serverTimestamp() };
             await addDoc(collection(db, `users/${userId}/messages`), assistantMsg);
-
+    
         } catch (error) {
             console.error("Chat.tsx: Error during message send or AI reply: ", error);
             setMessages(m => m.filter(msg => msg !== userMsg));
             const errorMsg: ChatMessage = { role: 'assistant', content: 'Sorry, I ran into an error.', timestamp: serverTimestamp() };
             setMessages(m => [...m, errorMsg]);
+        } finally {
+            setIsCoachTyping(false);
         }
     };
 
@@ -130,6 +134,7 @@ export const Chat: React.FC = () => {
             <IonContent className="ion-padding">
                 <div className="chat-container">
                     {loading ? <p>Loading messages...</p> : messages.length === 0 ? <p>Start a conversation with your AI Coach!</p> : messages.map((m, i) => (<ChatBubble key={m.id || i} role={m.role} text={m.content} />))}
+                    {isCoachTyping && <ChatBubble role="assistant" text="Coach is typing..." />}
                 </div>
             </IonContent>
             <IonFooter className="ion-no-border chat-footer">

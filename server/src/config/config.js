@@ -7,9 +7,8 @@ const config = {
     STRAVA_REDIRECT_URI: process.env.STRAVA_REDIRECT_URI,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    APP_CLIENT_ORIGIN: process.env.APP_CLIENT_ORIGIN || 'http://localhost:8100', // Assuming default for client
-    PORT: process.env.PORT || 3000, // Assuming default port
-    // Add other configurations as needed
+    APP_CLIENT_ORIGIN: process.env.APP_CLIENT_ORIGIN || 'http://localhost:8100',
+    PORT: process.env.PORT || 3000,
 };
 
 export default config;
