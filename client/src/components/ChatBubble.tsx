@@ -8,8 +8,8 @@ export const ChatBubble: React.FC<{role: 'user'|'assistant', text: string}> = ({
         color: role === 'user' ? 'white' : 'black',
         padding: '10px 14px',
         borderRadius: 12,
-        maxWidth: '78%',
-        whiteSpace: 'pre-wrap',
+        maxWidth: '100%',
+        // whiteSpace: 'pre-wrap',
         wordWrap: 'break-word'
     };
 

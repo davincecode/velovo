@@ -26,3 +26,37 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({ message: 'Error updating profile' });
   }
 };
+
+// New function to clear chat history
+export const clearChatHistory = async (req, res) => {
+  const { userId } = req.params;
+
+  console.log(`[API] Received request to clear chat history for userId: ${userId}`);
+
+  if (!userId) {
+    return res.status(400).json({ message: 'Missing userId' });
+  }
+
+  try {
+    const messagesRef = admin.firestore().collection('users').doc(userId).collection('messages');
+    const snapshot = await messagesRef.get();
+
+    if (snapshot.empty) {
+      console.log(`[Firebase] No chat history to clear for userId: ${userId}`);
+      return res.status(200).json({ message: 'No chat history to clear.' });
+    }
+
+    const batch = admin.firestore().batch();
+    snapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+    console.log(`[Firebase] Chat history cleared for userId: ${userId}`);
+    res.status(200).json({ message: 'Chat history cleared successfully' });
+
+  } catch (error) {
+    console.error(`[Firebase] Error clearing chat history for ${userId}:`, error);
+    res.status(500).json({ message: 'Error clearing chat history' });
+  }
+};

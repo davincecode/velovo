@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonTextarea, IonButton, IonFooter, IonIcon } from '@ionic/react';
-import { send as sendIcon } from 'ionicons/icons';
+import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonTextarea, IonButton, IonFooter, IonIcon, IonButtons, useIonAlert } from '@ionic/react';
+import { send as sendIcon, trash as trashIcon } from 'ionicons/icons';
 import { ChatBubble } from '../components/ChatBubble';
 import { useAuth } from '../context/AuthContext';
 import { AIService } from '../services/AIService';
 import { db } from '../services/firebase';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { UserProfile } from '../userProfile';
+import { clearChatHistory } from '../services/userService'; // Import the new service
 import '../theme/global.css';
 
 interface ChatMessage {
@@ -22,6 +23,7 @@ export const Chat: React.FC = () => {
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(true);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [presentAlert] = useIonAlert();
 
     const userId = user?.id;
 
@@ -31,29 +33,23 @@ export const Chat: React.FC = () => {
             return;
         }
 
-        // Fetch user profile
         const fetchUserProfile = async () => {
             const userDocRef = doc(db, 'users', userId);
             const userDocSnap = await getDoc(userDocRef);
             if (userDocSnap.exists()) {
                 setUserProfile(userDocSnap.data() as UserProfile);
-                console.log("Chat.tsx: User profile fetched.");
             } else {
-                console.log("Chat.tsx: User profile not found.");
+                console.log("Chat.tsx: No user profile found.");
             }
         };
 
         fetchUserProfile();
 
-        // Subscribe to messages
         const messagesCollectionRef = collection(db, `users/${userId}/messages`);
         const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedMessages: ChatMessage[] = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data() as Omit<ChatMessage, 'id'>
-            }));
+            const fetchedMessages: ChatMessage[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Omit<ChatMessage, 'id'> }));
             setMessages(fetchedMessages);
             setLoading(false);
         }, (error) => {
@@ -63,6 +59,30 @@ export const Chat: React.FC = () => {
 
         return () => unsubscribe();
     }, [userId]);
+
+    const handleClearChat = () => {
+        presentAlert({
+            header: 'Clear Chat History',
+            message: 'Are you sure you want to permanently delete all messages?',
+            buttons: [
+                'Cancel',
+                {
+                    text: 'Clear',
+                    handler: async () => {
+                        if (!userId) return;
+                        try {
+                            await clearChatHistory(userId);
+                            // The onSnapshot listener will automatically update the UI
+                            presentAlert({ header: 'Success', message: 'Chat history cleared.', buttons: ['OK'] });
+                        } catch (error) {
+                            console.error("Failed to clear chat history", error);
+                            presentAlert({ header: 'Error', message: 'Could not clear chat history.', buttons: ['OK'] });
+                        }
+                    },
+                },
+            ],
+        });
+    };
 
     const handleSend = async () => {
         if (!text.trim() || !userId) return;
@@ -74,11 +94,10 @@ export const Chat: React.FC = () => {
         try {
             await addDoc(collection(db, `users/${userId}/messages`), userMsg);
 
-            // Construct the detailed system prompt with the user's profile
             let systemPrompt = 'You are a world-class cycling coach. Be encouraging and provide actionable advice.';
             if (userProfile) {
                 systemPrompt += `\n\nHere is the athlete\'s profile:\n${JSON.stringify(userProfile, null, 2)}`;
-                systemPrompt += '\n\nWhen answering, consider all aspects of their profile, from their goals and bike setup to their performance metrics and lifestyle. If you need more information to provide the best advice, ask clarifying questions.';
+                systemPrompt += '\n\nWhen answering, consider all aspects of their profile. If you need more information, ask clarifying questions.';
             }
 
             const currentMessagesForAI = messages.map(m => ({ role: m.role, content: m.content }));
@@ -98,16 +117,19 @@ export const Chat: React.FC = () => {
 
     return (
         <IonPage>
-            <IonHeader><IonToolbar><IonTitle>Coach</IonTitle></IonToolbar></IonHeader>
+            <IonHeader>
+                <IonToolbar>
+                    <IonTitle>Coach</IonTitle>
+                    <IonButtons slot="end">
+                        <IonButton onClick={handleClearChat}>
+                            <IonIcon slot="icon-only" icon={trashIcon} />
+                        </IonButton>
+                    </IonButtons>
+                </IonToolbar>
+            </IonHeader>
             <IonContent className="ion-padding">
                 <div className="chat-container">
-                    {loading ? (
-                        <p>Loading messages...</p>
-                    ) : messages.length === 0 ? (
-                        <p>Start a conversation with your AI Coach!</p>
-                    ) : (
-                        messages.map((m, i) => (<ChatBubble key={m.id || i} role={m.role} text={m.content} />))
-                    )}
+                    {loading ? <p>Loading messages...</p> : messages.length === 0 ? <p>Start a conversation with your AI Coach!</p> : messages.map((m, i) => (<ChatBubble key={m.id || i} role={m.role} text={m.content} />))}
                 </div>
             </IonContent>
             <IonFooter className="ion-no-border chat-footer">
