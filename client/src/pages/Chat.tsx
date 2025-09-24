@@ -73,7 +73,6 @@ export const Chat: React.FC = () => {
                         if (!userId) return;
                         try {
                             await clearChatHistory(userId);
-                            // The onSnapshot listener will automatically update the UI
                             presentAlert({ header: 'Success', message: 'Chat history cleared.', buttons: ['OK'] });
                         } catch (error) {
                             console.error("Failed to clear chat history", error);
@@ -87,28 +86,30 @@ export const Chat: React.FC = () => {
 
     const handleSend = async () => {
         if (!text.trim() || !userId) return;
-    
+
         const userMsg: ChatMessage = { role: 'user', content: text, timestamp: serverTimestamp() };
         setMessages(m => [...m, userMsg]);
         setText('');
         setIsCoachTyping(true);
-    
+
         try {
             await addDoc(collection(db, `users/${userId}/messages`), userMsg);
-    
-            let systemPrompt = 'You are a world-class cycling coach. Be encouraging and provide actionable advice.';
+
+            let systemPrompt = 'You are a world-class cycling coach. Your primary goal is to provide encouraging and actionable advice based on the user\'s profile and their ongoing conversation with you.';
+            systemPrompt += '\n\n**CRITICAL INSTRUCTION: You MUST treat this conversation as a continuous dialogue. Before answering, review the ENTIRE chat history provided. Your advice must be context-aware and build upon previous messages, recommendations, and user-provided data. Do not repeat advice or ask for information that has already been given.**';
+
             if (userProfile) {
                 systemPrompt += `\n\nHere is the athlete\'s profile:\n${JSON.stringify(userProfile, null, 2)}`;
-                systemPrompt += '\n\nWhen answering, consider all aspects of their profile. If you need more information, ask clarifying questions.';
+                systemPrompt += '\n\nWhen answering, consider all aspects of their profile in conjunction with the conversation history. If you need more information, ask clarifying questions.';
             }
-    
+
             const currentMessagesForAI = messages.map(m => ({ role: m.role, content: m.content }));
             const reply = await AIService.chat(systemPrompt, [...currentMessagesForAI, { role: userMsg.role, content: userMsg.content }]);
             const assistantText = reply?.text ?? 'Sorry, I could not provide a response.';
-    
+
             const assistantMsg: ChatMessage = { role: 'assistant', content: assistantText, timestamp: serverTimestamp() };
             await addDoc(collection(db, `users/${userId}/messages`), assistantMsg);
-    
+
         } catch (error) {
             console.error("Chat.tsx: Error during message send or AI reply: ", error);
             setMessages(m => m.filter(msg => msg !== userMsg));
@@ -133,7 +134,14 @@ export const Chat: React.FC = () => {
             </IonHeader>
             <IonContent className="ion-padding">
                 <div className="chat-container">
-                    {loading ? <p>Loading messages...</p> : messages.length === 0 ? <p>Start a conversation with your AI Coach!</p> : messages.map((m, i) => (<ChatBubble key={m.id || i} role={m.role} text={m.content} />))}
+                    {loading ? <p>Loading messages...</p> : messages.length === 0 ? (
+                        <div className="initial-greeting">
+                            <h3>Hey {userProfile?.basic_info?.name ?? 'Vince'}!</h3>
+                            <p>
+                                I’m your AI coach. I’m here to support your training—whether it’s a big goal or just getting out for a ride. I’ll use your profile and Strava data to give advice that fits you.
+                            </p>
+                        </div>
+                    ) : messages.map((m, i) => (<ChatBubble key={m.id || i} role={m.role} text={m.content} />))}
                     {isCoachTyping && <ChatBubble role="assistant" text="Coach is typing..." />}
                 </div>
             </IonContent>
@@ -141,7 +149,7 @@ export const Chat: React.FC = () => {
                 <div className="chat-input-wrapper">
                     <IonTextarea
                         value={text}
-                        placeholder="Ask your coach..."
+                        placeholder="What’s on your mind today?"
                         onIonChange={e => setText((e.target as any).value)}
                         className="chat-textarea"
                         autoGrow={true}
@@ -150,6 +158,10 @@ export const Chat: React.FC = () => {
                         <IonIcon icon={sendIcon} />
                     </IonButton>
                 </div>
+                <small style={{textAlign: 'center', display: 'block', padding: '0 10px 5px'}}>
+                    As your coach, I am also learning and I can make mistakes sometimes. &nbsp;
+                    <a href="mailto:feedback@velovo.app" style={{color: '#888'}}>Got thoughts or ideas? I’m here to learn and improve.</a>
+                </small>
             </IonFooter>
         </IonPage>
     );
