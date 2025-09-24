@@ -152,7 +152,7 @@ body.dark {
 }
 
 ion-tab-button.tab-selected ion-icon {
-  color: var(--ion-color-primary);
+  color: --ion-color-primary;
 }
 
 /* Remove box shadow from headers */
