@@ -84,9 +84,18 @@ export const Training: React.FC = () => {
         setActivities([]);
     };
 
-    const openActivityDetails = (activity: Activity) => {
-        setSelectedActivity(activity);
-        setShowModal(true);
+    const openActivityDetails = async (activity: Activity) => {
+        if (!accessToken) return;
+        try {
+            const detailedActivity = await StravaService.getActivityDetails(accessToken, activity.id);
+            setSelectedActivity(detailedActivity);
+            setShowModal(true);
+        } catch (error) {
+            console.error('Error fetching activity details:', error);
+            // Fallback to basic activity details if fetch fails
+            setSelectedActivity(activity);
+            setShowModal(true);
+        }
     };
 
     return (
@@ -120,6 +129,16 @@ export const Training: React.FC = () => {
                                 <IonItem><IonLabel>Max Power: {selectedActivity.maxWatts?.toFixed(0)} W</IonLabel></IonItem>
                                 <IonItem><IonLabel>Ave Cadence: {selectedActivity.averageCadence?.toFixed(0)} rpm</IonLabel></IonItem>
                                 <IonItem><IonLabel>Calories: {selectedActivity.calories?.toLocaleString()}</IonLabel></IonItem>
+                                {selectedActivity.description && (
+                                    <IonItem>
+                                        <IonLabel><h2>Description</h2><p style={{ whiteSpace: 'pre-wrap' }}>{selectedActivity.description}</p></IonLabel>
+                                    </IonItem>
+                                )}
+                                {selectedActivity.privateNote && (
+                                    <IonItem>
+                                        <IonLabel><h2>Private Note</h2><p style={{ whiteSpace: 'pre-wrap' }}>{selectedActivity.privateNote}</p></IonLabel>
+                                    </IonItem>
+                                )}
                             </IonList>
                         )}
                     </IonContent>
