@@ -102,29 +102,38 @@ export const Home: React.FC = () => {
                     </IonHeader>
                     <IonContent className="ion-padding">
                         {selectedActivity && (
-                            <IonList lines="none">
-                                <IonItem><IonLabel>Distance: {(selectedActivity.distanceM / 1000).toFixed(2)}{'\u00A0'}km</IonLabel></IonItem>
-                                <IonItem><IonLabel>Moving Time: {formatTime(selectedActivity.movingTimeS)}</IonLabel></IonItem>
-                                <IonItem><IonLabel>Elapsed Time: {formatTime(selectedActivity.elapsedTimeS)}</IonLabel></IonItem>
-                                <IonItem><IonLabel>Elevation Gain: {selectedActivity.elevationGainM?.toLocaleString()}{'\u00A0'}m</IonLabel></IonItem>
-                                <IonItem><IonLabel>Total Work: {selectedActivity.kilojoules?.toLocaleString()}{'\u00A0'}kJ</IonLabel></IonItem>
-                                <IonItem><IonLabel>Ave Speed: {((selectedActivity.averageSpeed ?? 0) * 3.6).toFixed(1)}{'\u00A0'}km/h</IonLabel></IonItem>
-                                <IonItem><IonLabel>Max Speed: {((selectedActivity.maxSpeed ?? 0) * 3.6).toFixed(1)}{'\u00A0'}km/h</IonLabel></IonItem>
-                                <IonItem><IonLabel>Ave Power: {selectedActivity.averageWatts?.toFixed(0)}{'\u00A0'}W</IonLabel></IonItem>
-                                <IonItem><IonLabel>Max Power: {selectedActivity.maxWatts?.toFixed(0)}{'\u00A0'}W</IonLabel></IonItem>
-                                <IonItem><IonLabel>Ave Cadence: {selectedActivity.averageCadence?.toFixed(0)}{'\u00A0'}rpm</IonLabel></IonItem>
-                                <IonItem><IonLabel>Calories: {selectedActivity.calories?.toLocaleString()}</IonLabel></IonItem>
+                            <>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                    <div>
+                                        <div className="statRowStyle"><strong>Distance:</strong><span>{(selectedActivity.distanceM / 1000).toFixed(2)}{'\u00A0'}km</span></div>
+                                        <div className="statRowStyle"><strong>Moving Time:</strong><span>{formatTime(selectedActivity.movingTimeS)}</span></div>
+                                        <div className="statRowStyle"><strong>Elapsed Time:</strong><span>{formatTime(selectedActivity.elapsedTimeS)}</span></div>
+                                        <div className="statRowStyle"><strong>Ave Speed:</strong><span>{((selectedActivity.averageSpeed ?? 0) * 3.6).toFixed(1)}{'\u00A0'}km/h</span></div>
+                                        <div className="statRowStyle"><strong>Max Speed:</strong><span>{((selectedActivity.maxSpeed ?? 0) * 3.6).toFixed(1)}{'\u00A0'}km/h</span></div>
+                                    </div>
+                                    <div>
+                                        <div className="statRowStyle"><strong>Elevation:</strong><span>{selectedActivity.elevationGainM?.toLocaleString()}{'\u00A0'}m</span></div>
+                                        <div className="statRowStyle"><strong>Ave Power:</strong><span>{selectedActivity.averageWatts?.toFixed(0)}{'\u00A0'}W</span></div>
+                                        <div className="statRowStyle"><strong>Max Power:</strong><span>{selectedActivity.maxWatts?.toFixed(0)}{'\u00A0'}W</span></div>
+                                        <div className="statRowStyle"><strong>Ave Cadence:</strong><span>{selectedActivity.averageCadence?.toFixed(0)}{'\u00A0'}rpm</span></div>
+                                        <div className="statRowStyle"><strong>Calories:</strong><span>{selectedActivity.calories?.toLocaleString()}</span></div>
+                                        <div className="statRowStyle"><strong>Total Work:</strong><span>{selectedActivity.kilojoules?.toLocaleString()}{'\u00A0'}kJ</span></div>
+                                    </div>
+                                </div>
+                                
                                 {selectedActivity.description && (
-                                    <IonItem>
-                                        <IonLabel><h2>Description</h2><p style={{ whiteSpace: 'pre-wrap' }}>{selectedActivity.description}</p></IonLabel>
-                                    </IonItem>
+                                    <div style={{ marginTop: '16px' }}>
+                                        <h3>Description</h3>
+                                        <p style={{ whiteSpace: 'pre-wrap' }}>{selectedActivity.description}</p>
+                                    </div>
                                 )}
                                 {selectedActivity.privateNote && (
-                                    <IonItem>
-                                        <IonLabel><h2>Private Note</h2><p style={{ whiteSpace: 'pre-wrap' }}>{selectedActivity.privateNote}</p></IonLabel>
-                                    </IonItem>
+                                    <div style={{ marginTop: '16px' }}>
+                                        <h3>Private Note</h3>
+                                        <p style={{ whiteSpace: 'pre-wrap' }}>{selectedActivity.privateNote}</p>
+                                    </div>
                                 )}
-                            </IonList>
+                            </>
                         )}
                     </IonContent>
                 </IonModal>
