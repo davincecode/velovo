@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonButton, IonList, IonItem, IonLabel, IonModal, IonButtons, IonIcon } from '@ionic/react';
+import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonButton, IonList, IonItem, IonLabel, IonModal, IonButtons, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/react';
 import { useAuth } from '../context/AuthContext';
 import { StravaService, Activity } from '../services/StravaService';
 import { PerformanceCard } from '../components/PerformanceCard';
@@ -11,6 +11,7 @@ import { UserProfile } from '../userProfile';
 
 const STRAVA_TOKEN_KEY = 'strava_access_token';
 const STRAVA_ACTIVITIES_KEY = 'strava_activities_cache';
+const ACTIVITIES_PER_PAGE = 10;
 
 // Helper to format seconds into HH:MM:SS
 const formatTime = (seconds: number) => new Date(seconds * 1000).toISOString().substr(11, 8);
@@ -24,6 +25,8 @@ export const Home: React.FC = () => {
     });
     const [showModal, setShowModal] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -45,29 +48,47 @@ export const Home: React.FC = () => {
         fetchUserProfile();
     }, [user?.id]);
 
-    useEffect(() => {
-        const fetchActivities = async () => {
-            const accessToken = localStorage.getItem(STRAVA_TOKEN_KEY);
-            // Only fetch if we have a token AND no activities are cached/loaded
-            if (accessToken && activities.length === 0) {
-                try {
-                    const userActivities = await StravaService.getActivities(accessToken);
-                    localStorage.setItem(STRAVA_ACTIVITIES_KEY, JSON.stringify(userActivities));
-                    setActivities(userActivities);
-                } catch (error) {
-                    console.error("Error fetching Strava activities:", error);
-                    if ((error as Error).message.includes('401')) {
-                        // Token is invalid, clear it. The user will have to reconnect from settings.
-                        localStorage.removeItem(STRAVA_TOKEN_KEY);
-                        localStorage.removeItem(STRAVA_ACTIVITIES_KEY);
-                        setActivities([]);
-                    }
-                }
-            }
-        };
+    const fetchActivities = async (pageNum: number, perPage: number) => {
+        const accessToken = localStorage.getItem(STRAVA_TOKEN_KEY);
+        if (!accessToken) return;
 
-        fetchActivities();
-    }, [activities.length]);
+        try {
+            const newActivities = await StravaService.getActivities(accessToken, pageNum, perPage);
+            if (newActivities.length < perPage) {
+                setHasMore(false);
+            }
+            setActivities(prev => [...prev, ...newActivities]);
+            // Update cache
+            localStorage.setItem(STRAVA_ACTIVITIES_KEY, JSON.stringify([...activities, ...newActivities]));
+        } catch (error) {
+            console.error("Error fetching Strava activities:", error);
+            if ((error as Error).message.includes('401')) {
+                localStorage.removeItem(STRAVA_TOKEN_KEY);
+                localStorage.removeItem(STRAVA_ACTIVITIES_KEY);
+                setActivities([]);
+            }
+        }
+    };
+
+    useEffect(() => {
+        // Clear cache and fetch initial activities only if activities are not already loaded
+        if (activities.length === 0) {
+            localStorage.removeItem(STRAVA_ACTIVITIES_KEY);
+            fetchActivities(1, ACTIVITIES_PER_PAGE);
+            setPage(2);
+        }
+    }, []); // Run only once on mount
+
+    const loadMoreActivities = (event: any) => {
+        if (!hasMore) {
+            event.target.complete();
+            return;
+        }
+        fetchActivities(page, ACTIVITIES_PER_PAGE).then(() => {
+            setPage(page + 1);
+            event.target.complete();
+        });
+    };
 
 
     const openActivityDetails = async (activity: Activity) => {
@@ -79,7 +100,6 @@ export const Home: React.FC = () => {
             setShowModal(true);
         } catch (error) {
             console.error('Error fetching activity details:', error);
-            // Fallback to basic activity details if fetch fails
             setSelectedActivity(activity);
             setShowModal(true);
         }
@@ -165,6 +185,9 @@ export const Home: React.FC = () => {
                                 </IonItem>
                             ))}
                         </IonList>
+                        <IonInfiniteScroll threshold="100px" disabled={!hasMore} onIonInfinite={loadMoreActivities}>
+                            <IonInfiniteScrollContent loadingSpinner="bubbles" loadingText="Loading more activities..."></IonInfiniteScrollContent>
+                        </IonInfiniteScroll>
                     </>
                     ) : (
                         <p>No Strava activities found. Connect your Strava account from the Settings page.</p>

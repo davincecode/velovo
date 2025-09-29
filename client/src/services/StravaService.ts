@@ -23,7 +23,7 @@ export interface Activity {
 
 interface StravaServiceType {
     exchangeToken(clientId: string, clientSecret: string, code: string): Promise<any>;
-    getActivities(accessToken: string): Promise<Activity[]>;
+    getActivities(accessToken: string, page: number, perPage: number): Promise<Activity[]>;
     getActivityDetails(accessToken: string, activityId: string): Promise<Activity>;
 }
 
@@ -84,8 +84,8 @@ export const StravaService: StravaServiceType = {
         };
     },
 
-    async getActivities(accessToken: string): Promise<Activity[]> {
-        const res = await fetch(`${API_BASE}/athlete/activities?per_page=30`, {
+    async getActivities(accessToken: string, page: number, perPage: number): Promise<Activity[]> {
+        const res = await fetch(`${API_BASE}/athlete/activities?page=${page}&per_page=${perPage}`, {
             headers: { Authorization: `Bearer ${accessToken}` }
         });
         if (!res.ok) {
