@@ -14,7 +14,7 @@ const STRAVA_ACTIVITIES_KEY = 'strava_activities_cache';
 const ACTIVITIES_PER_PAGE = 10;
 
 // Helper to format seconds into HH:MM:SS
-const formatTime = (seconds: number) => new Date(seconds * 1000).toISOString().substr(11, 8);
+const formatTime = (seconds: number) => new Date(seconds * 1000).toISOString().substring(11, 19);
 
 export const Home: React.FC = () => {
     const { user } = useAuth();
@@ -45,7 +45,7 @@ export const Home: React.FC = () => {
                 }
             }
         };
-        fetchUserProfile();
+        void fetchUserProfile();
     }, [user?.id]);
 
     const fetchActivities = async (pageNum: number, perPage: number) => {
@@ -74,20 +74,18 @@ export const Home: React.FC = () => {
         // Clear cache and fetch initial activities only if activities are not already loaded
         if (activities.length === 0) {
             localStorage.removeItem(STRAVA_ACTIVITIES_KEY);
-            fetchActivities(1, ACTIVITIES_PER_PAGE);
+            void fetchActivities(1, ACTIVITIES_PER_PAGE);
             setPage(2);
         }
     }, []); // Run only once on mount
 
-    const loadMoreActivities = (event: any) => {
-        if (!hasMore) {
-            event.target.complete();
-            return;
-        }
-        fetchActivities(page, ACTIVITIES_PER_PAGE).then(() => {
+    const loadMoreActivities = async (event: CustomEvent<void>) => {
+        const infiniteScroll = event.target as HTMLIonInfiniteScrollElement;
+        if (hasMore) {
+            await fetchActivities(page, ACTIVITIES_PER_PAGE);
             setPage(page + 1);
-            event.target.complete();
-        });
+        }
+        infiniteScroll.complete();
     };
 
 

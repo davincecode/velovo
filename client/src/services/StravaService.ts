@@ -21,8 +21,42 @@ export interface Activity {
     privateNote?: string;
 }
 
+// Type for the raw response from Strava's token exchange endpoint
+interface StravaTokenResponse {
+    token_type: string;
+    expires_at: number;
+    expires_in: number;
+    refresh_token: string;
+    access_token: string;
+    athlete: object;
+}
+
+// Type for the raw activity data from Strava API
+interface StravaRawActivity {
+    id: number;
+    name: string;
+    type: string;
+    distance: number;
+    moving_time: number;
+    elapsed_time: number;
+    start_date: string;
+    total_elevation_gain: number;
+    average_watts?: number;
+    max_watts?: number;
+    average_heartrate?: number;
+    kilojoules?: number;
+    average_speed?: number;
+    max_speed?: number;
+    average_cadence?: number;
+    max_cadence?: number;
+    calories?: number;
+    description?: string;
+    private_note?: string;
+}
+
+
 interface StravaServiceType {
-    exchangeToken(clientId: string, clientSecret: string, code: string): Promise<any>;
+    exchangeToken(clientId: string, clientSecret: string, code: string): Promise<StravaTokenResponse>;
     getActivities(accessToken: string, page: number, perPage: number): Promise<Activity[]>;
     getActivityDetails(accessToken: string, activityId: string): Promise<Activity>;
 }
@@ -31,7 +65,7 @@ const API_BASE = 'https://www.strava.com/api/v3';
 const TOKEN_ENDPOINT = 'https://www.strava.com/oauth/token';
 
 export const StravaService: StravaServiceType = {
-    async exchangeToken(clientId: string, clientSecret: string, code: string): Promise<any> {
+    async exchangeToken(clientId: string, clientSecret: string, code: string): Promise<StravaTokenResponse> {
         const res = await fetch(TOKEN_ENDPOINT, {
             method: 'POST',
             headers: {
@@ -60,7 +94,7 @@ export const StravaService: StravaServiceType = {
             if (res.status === 401) throw new Error('Unauthorized: 401');
             throw new Error('Failed to fetch Strava activity details');
         }
-        const a = await res.json();
+        const a: StravaRawActivity = await res.json();
         return {
             id: String(a.id),
             name: a.name,
@@ -92,9 +126,9 @@ export const StravaService: StravaServiceType = {
             if (res.status === 401) throw new Error('Unauthorized: 401');
             throw new Error('Failed to fetch Strava activities');
         }
-        const data = await res.json();
+        const data: StravaRawActivity[] = await res.json();
 
-        return data.map((a: any): Activity => {
+        return data.map((a: StravaRawActivity): Activity => {
             return {
                 id: String(a.id),
                 name: a.name,
