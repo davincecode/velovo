@@ -1,11 +1,8 @@
-
 export interface UserProfile {
   basic_info: BasicInfo;
   goals: Goals;
   ride_preferences: RidePreferences;
   bike_setup: BikeSetup[];
-  performance_metrics: PerformanceMetrics;
-  training_profile: TrainingProfile;
   health_lifestyle: HealthLifestyle;
   achievements: Achievements;
   future_intentions: FutureIntentions;
@@ -14,14 +11,10 @@ export interface UserProfile {
 
 export interface BasicInfo {
   name: string;
-  nickname: string;
+  lastname: string;
   location: string;
   cycling_level: string;
   primary_discipline: string[];
-  availability: {
-    preferred_days: string[];
-    preferred_times: string[];
-  };
 }
 
 export interface Goals {
@@ -32,10 +25,6 @@ export interface Goals {
 export interface RidePreferences {
   ride_types: string[];
   terrain: string[];
-  weather_tolerance: string[];
-  duration_preference: string;
-  social_style: string;
-  music_habits: string;
 }
 
 export interface BikeSetup {
@@ -47,36 +36,6 @@ export interface BikeSetup {
   pedals: string;
   saddle: string;
   fit_notes: string;
-}
-
-export interface PerformanceMetrics {
-  ftp: number;
-  vo2_max: number;
-  avg_speed: number;
-  max_speed: number;
-  avg_power: number;
-  max_power: number;
-  avg_heart_rate: number;
-  max_heart_rate: number;
-  cadence: {
-    avg: number;
-    max: number;
-  };
-  weekly_distance: number;
-  monthly_elevation_gain: number;
-}
-
-export interface TrainingProfile {
-  training_style: string;
-  feedback_style: string;
-  zones: {
-    heart_rate: number[];
-    power: number[];
-  };
-  tss: number;
-  ctl: number;
-  atl: number;
-  form: number;
 }
 
 export interface HealthLifestyle {

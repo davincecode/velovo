@@ -22,12 +22,12 @@ export const CollapsibleCard: React.FC<CollapsibleCardProps> = ({ title, childre
 
   return (
     <IonCard>
-      <IonCardHeader onClick={toggleOpen} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <IonCardHeader onClick={toggleOpen} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row' }}>
         <IonCardTitle>{title}</IonCardTitle>
         <IonIcon icon={isOpen ? chevronUp : chevronDown} />
       </IonCardHeader>
       {isOpen && (
-        <IonCardContent style={{ height: '344px', overflowY: 'auto' }}>
+        <IonCardContent style={{ overflowY: 'auto' }}>
           {children}
         </IonCardContent>
       )}

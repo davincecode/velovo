@@ -2,7 +2,7 @@
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -86,4 +86,27 @@ body {
     justify-content: space-between;
     align-items: center;
     white-space: nowrap;
+}
+
+/* Remove all default borders and highlights from ion-item, ion-input, and ion-textarea */
+ion-item {
+    --border-width: 0 !important;
+    --inner-border-width: 0 !important;
+    --highlight-height: 0 !important; /* Ensure no highlight on the item itself */
+}
+
+ion-input {
+    --highlight-height: 0 !important;
+    --border-width: 0 !important;
+}
+
+ion-textarea {
+    --highlight-height: 0 !important;
+    --border-width: 0 !important;
+}
+
+/* Apply a black bottom border to the ion-item with custom-input-item class when it has the input-focused class */
+ion-item.custom-input-item.input-focused {
+    --border-width: 0 0 2px 0 !important;
+    --border-color: black !important;
 }

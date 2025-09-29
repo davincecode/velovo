@@ -12,7 +12,6 @@ import {
     IonItem,
     IonLabel,
     IonInput,
-    IonListHeader,
     IonTextarea,
     IonSelect,
     IonSelectOption,
@@ -20,7 +19,10 @@ import {
     IonCardHeader,
     IonCardTitle,
     IonCardContent,
-    IonSpinner
+    IonSpinner,
+    IonGrid,
+    IonRow,
+    IonCol
 } from '@ionic/react';
 import { useAuth } from '../context/AuthContext';
 import { cog, trash } from 'ionicons/icons';
@@ -34,14 +36,10 @@ import { CollapsibleCard } from '../components/CollapsibleCard';
 const sampleData: UserProfile = {
     basic_info: {
         name: "",
-        nickname: "",
+        lastname: "",
         location: "",
-        cycling_level: "Intermediate",
+        cycling_level: "Beginner",
         primary_discipline: [],
-        availability: {
-            preferred_days: [],
-            preferred_times: []
-        }
     },
     goals: {
         short_term: [],
@@ -50,40 +48,8 @@ const sampleData: UserProfile = {
     ride_preferences: {
         ride_types: [],
         terrain: [],
-        weather_tolerance: [],
-        duration_preference: "",
-        social_style: "",
-        music_habits: ""
     },
     bike_setup: [],
-    performance_metrics: {
-        ftp: 0,
-        vo2_max: 0,
-        avg_speed: 0,
-        max_speed: 0,
-        avg_power: 0,
-        max_power: 0,
-        avg_heart_rate: 0,
-        max_heart_rate: 0,
-        cadence: {
-            avg: 0,
-            max: 0
-        },
-        weekly_distance: 0,
-        monthly_elevation_gain: 0
-    },
-    training_profile: {
-        training_style: "",
-        feedback_style: "",
-        zones: {
-            heart_rate: [],
-            power: []
-        },
-        tss: 0,
-        ctl: 0,
-        atl: 0,
-        form: 0
-    },
     health_lifestyle: {
         weight: 0,
         sleep_quality: "",
@@ -123,14 +89,8 @@ const sampleData: UserProfile = {
 // --- Options for Select Inputs ---
 const CYCLING_LEVEL_OPTIONS = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
 const PRIMARY_DISCIPLINE_OPTIONS = ['Road', 'Gravel', 'Mountain', 'Track', 'Commuting', 'Touring'];
-const DAY_OPTIONS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const TIME_OPTIONS = ['Morning', 'Afternoon', 'Evening'];
 const RIDE_TYPE_OPTIONS = ['Solo', 'Group', 'Training', 'Race', 'Social', 'Endurance'];
 const TERRAIN_OPTIONS = ['Flat', 'Hilly', 'Mountainous', 'Mixed', 'Gravel', 'Paved'];
-const WEATHER_TOLERANCE_OPTIONS = ['Hot', 'Warm', 'Cool', 'Cold', 'Dry', 'Wet', 'Windy'];
-const DURATION_PREFERENCE_OPTIONS = ['< 1 hour', '1-2 hours', '2-4 hours', '> 4 hours'];
-const SOCIAL_STYLE_OPTIONS = ['Quiet solo rides', 'Chatty group rides', 'Competitive group rides', 'A mix of both'];
-const TRAINING_STYLE_OPTIONS = ['Structured', 'Unstructured', 'Following a plan', 'Just riding'];
 const SLEEP_QUALITY_OPTIONS = ['Excellent', 'Good', 'Fair', 'Poor'];
 const RISK_TOLERANCE_OPTIONS = ['High', 'Moderate', 'Low'];
 const CONFIDENCE_ZONES_OPTIONS = ['High', 'Medium', 'Low'];
@@ -138,11 +98,18 @@ const CONFIDENCE_ZONES_OPTIONS = ['High', 'Medium', 'Low'];
 const NEW_BIKE: BikeSetup = { bike_name: '', type: '', groupset: '', wheelset: '', tire_size: '', pedals: '', saddle: '', fit_notes: '' };
 
 // Helper to handle nested state updates
-const setNestedValue = (obj: any, path: string, value: any) => {
+const setNestedValue = (obj: UserProfile, path: string, value: string | number | string[] | undefined | null): UserProfile => {
     const keys = path.split('.');
-    const newObj = JSON.parse(JSON.stringify(obj));
-    let current = newObj;
-    for (let i = 0; i < keys.length - 1; i++) { current = current[keys[i]]; }
+    const newObj: UserProfile = JSON.parse(JSON.stringify(obj));
+    let current: { [key: string]: any } = newObj;
+
+    for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        if (typeof current[key] !== 'object' || current[key] === null) {
+            current[key] = {};
+        }
+        current = current[key];
+    }
     current[keys[keys.length - 1]] = value;
     return newObj;
 };
@@ -177,13 +144,13 @@ export const Profile: React.FC = () => {
         fetchUserProfile();
     }, [user?.id]);
 
-    const handleInputChange = (path: string, value: any, type: 'string' | 'string[]' | 'number' = 'string') => {
+    const handleInputChange = (path: string, value: string | number | string[] | null | undefined, type: 'string' | 'string[]' | 'number' = 'string') => {
         if (!profileData) return;
-        let processedValue: any = value;
+        let processedValue: string | number | string[] | null | undefined = value;
         if (type === 'string[]' && typeof value === 'string') {
             processedValue = (value || '').split(',').map((s:string) => s.trim());
         } else if (type === 'number') {
-            processedValue = parseFloat(value) || 0;
+            processedValue = parseFloat(String(value)) || 0;
         }
         setProfileData(prevData => setNestedValue(prevData!, path, processedValue));
     };
@@ -242,29 +209,58 @@ export const Profile: React.FC = () => {
             <IonContent>
                 <form className="profile-form" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
 
-                    <IonList style={{ marginInline: '0' }}>
-                        <IonItem><IonLabel position="stacked">Name</IonLabel><IonInput value={profileData.basic_info.name} onIonChange={e => handleInputChange('basic_info.name', e.detail.value)} /></IonItem>
-                        <IonItem><IonLabel position="stacked">Nickname</IonLabel><IonInput value={profileData.basic_info.nickname} onIonChange={e => handleInputChange('basic_info.nickname', e.detail.value)} /></IonItem>
-                        <IonItem><IonLabel position="stacked">Location</IonLabel><IonInput value={profileData.basic_info.location} onIonChange={e => handleInputChange('basic_info.location', e.detail.value)} /></IonItem>
-                        <IonItem><IonLabel>Cycling Level</IonLabel><IonSelect value={profileData.basic_info.cycling_level} onIonChange={e => handleInputChange('basic_info.cycling_level', e.detail.value)}>{CYCLING_LEVEL_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                        <IonItem><IonLabel>Primary Discipline</IonLabel><IonSelect multiple value={profileData.basic_info.primary_discipline} onIonChange={e => handleInputChange('basic_info.primary_discipline', e.detail.value)}>{PRIMARY_DISCIPLINE_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                        <IonItem><IonLabel>Preferred Days</IonLabel><IonSelect multiple value={profileData.basic_info.availability.preferred_days} onIonChange={e => handleInputChange('basic_info.availability.preferred_days', e.detail.value)}>{DAY_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                        <IonItem><IonLabel>Preferred Times</IonLabel><IonSelect multiple value={profileData.basic_info.availability.preferred_times} onIonChange={e => handleInputChange('basic_info.availability.preferred_times', e.detail.value)}>{TIME_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                    </IonList>
+                    <IonCard style={{ background: 'var(--ion-color-dark)', color: 'var(--ion-color-dark-contrast)', padding: '12px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                        <IonCardContent class="ion-no-padding">
+                            <IonGrid>
+                                <IonRow>
+                                    <IonCol size="6">
+                                        <IonItem style={{ '--background': 'transparent', '--border-color': 'transparent' }}>
+                                            <IonLabel position="stacked" style={{ color: 'var(--ion-color-dark-contrast)' }}>Name</IonLabel>
+                                            <IonInput value={profileData.basic_info.name} onIonChange={e => handleInputChange('basic_info.name', e.detail.value)} style={{ '--color': 'var(--ion-color-dark-contrast)' }} />
+                                        </IonItem>
+                                    </IonCol>
+                                    <IonCol size="6">
+                                        <IonItem style={{ '--background': 'transparent', '--border-color': 'transparent' }}>
+                                            <IonLabel position="stacked" style={{ color: 'var(--ion-color-dark-contrast)' }}>Lastname</IonLabel>
+                                            <IonInput value={profileData.basic_info.lastname} onIonChange={e => handleInputChange('basic_info.lastname', e.detail.value)} style={{ '--color': 'var(--ion-color-dark-contrast)' }} />
+                                        </IonItem>
+                                    </IonCol>
+                                </IonRow>
+                                <IonRow>
+                                    <IonCol size="12">
+                                        <IonItem style={{ '--background': 'transparent', '--border-color': 'transparent' }}>
+                                            <IonLabel position="stacked" style={{ color: 'var(--ion-color-dark-contrast)' }}>Location</IonLabel>
+                                            <IonInput value={profileData.basic_info.location} onIonChange={e => handleInputChange('basic_info.location', e.detail.value)} style={{ '--color': 'var(--ion-color-dark-contrast)' }} />
+                                        </IonItem>
+                                    </IonCol>
+                                </IonRow>
+                                <IonRow>
+                                    <IonCol size="12">
+                                        <IonItem style={{ '--background': 'transparent', '--border-color': 'transparent', color: 'var(--ion-color-dark-contrast)' }}>
+                                            <IonLabel>Cycling Level</IonLabel><IonSelect value={profileData.basic_info.cycling_level} onIonChange={e => handleInputChange('basic_info.cycling_level', e.detail.value)}>{CYCLING_LEVEL_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect>
+                                        </IonItem>
+                                    </IonCol>
+                                </IonRow>
+                                <IonRow>
+                                    <IonCol size="12">
+                                        <IonItem style={{ '--background': 'transparent', '--border-color': 'transparent', color: 'var(--ion-color-dark-contrast)' }}>
+                                            <IonLabel>Primary Discipline</IonLabel><IonSelect multiple value={profileData.basic_info.primary_discipline} onIonChange={e => handleInputChange('basic_info.primary_discipline', e.detail.value)}>{PRIMARY_DISCIPLINE_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect>
+                                        </IonItem>
+                                    </IonCol>
+                                </IonRow>
+                            </IonGrid>
+                        </IonCardContent>
+                    </IonCard>
 
                     <CollapsibleCard title="Ride Preferences">
-                        <IonList style={{ marginInline: '0' }}>
+                        <IonList>
                             <IonItem><IonLabel>Ride Types</IonLabel><IonSelect multiple value={profileData.ride_preferences.ride_types} onIonChange={e => handleInputChange('ride_preferences.ride_types', e.detail.value)}>{RIDE_TYPE_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
                             <IonItem><IonLabel>Preferred Terrain</IonLabel><IonSelect multiple value={profileData.ride_preferences.terrain} onIonChange={e => handleInputChange('ride_preferences.terrain', e.detail.value)}>{TERRAIN_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                            <IonItem><IonLabel>Weather Tolerance</IonLabel><IonSelect multiple value={profileData.ride_preferences.weather_tolerance} onIonChange={e => handleInputChange('ride_preferences.weather_tolerance', e.detail.value)}>{WEATHER_TOLERANCE_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                            <IonItem><IonLabel>Typical Duration</IonLabel><IonSelect value={profileData.ride_preferences.duration_preference} onIonChange={e => handleInputChange('ride_preferences.duration_preference', e.detail.value)}>{DURATION_PREFERENCE_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                            <IonItem><IonLabel>Social Style</IonLabel><IonSelect value={profileData.ride_preferences.social_style} onIonChange={e => handleInputChange('ride_preferences.social_style', e.detail.value)}>{SOCIAL_STYLE_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                            <IonItem><IonLabel position="stacked">Music Habits</IonLabel><IonInput value={profileData.ride_preferences.music_habits} onIonChange={e => handleInputChange('ride_preferences.music_habits', e.detail.value)} /></IonItem>
                         </IonList>
                     </CollapsibleCard>
 
                     <CollapsibleCard title="Goals">
-                        <IonList style={{ marginInline: '0' }}>
+                        <IonList>
                             <IonItem><IonLabel position="stacked">Short-Term Goals (comma-separated)</IonLabel><IonTextarea value={profileData.goals.short_term.join(', ')} onIonChange={e => handleInputChange('goals.short_term', e.detail.value, 'string[]')} /></IonItem>
                             <IonItem><IonLabel position="stacked">Long-Term Goals (comma-separated)</IonLabel><IonTextarea value={profileData.goals.long_term.join(', ')} onIonChange={e => handleInputChange('goals.long_term', e.detail.value, 'string[]')} /></IonItem>
                         </IonList>
@@ -283,7 +279,7 @@ export const Profile: React.FC = () => {
                                         </IonCardTitle>
                                     </IonCardHeader>
                                     <IonCardContent>
-                                        <IonList style={{ marginInline: '0' }}>
+                                        <IonList>
                                             <IonItem><IonLabel position="stacked">Bike Name</IonLabel><IonInput value={bike.bike_name} onIonChange={e => handleInputChange(`bike_setup.${index}.bike_name`, e.detail.value)} /></IonItem>
                                             <IonItem><IonLabel position="stacked">Type</IonLabel><IonInput value={bike.type} onIonChange={e => handleInputChange(`bike_setup.${index}.type`, e.detail.value)} /></IonItem>
                                             <IonItem><IonLabel position="stacked">Groupset</IonLabel><IonInput value={bike.groupset} onIonChange={e => handleInputChange(`bike_setup.${index}.groupset`, e.detail.value)} /></IonItem>
@@ -300,38 +296,8 @@ export const Profile: React.FC = () => {
                         </>
                     </CollapsibleCard>
 
-                    <CollapsibleCard title="Performance Metrics">
-                        <IonList style={{ marginInline: '0' }}>
-                            <IonItem><IonLabel>FTP (W)</IonLabel><IonInput type="number" value={profileData.performance_metrics.ftp} onIonChange={e => handleInputChange('performance_metrics.ftp', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>VO2 Max</IonLabel><IonInput type="number" value={profileData.performance_metrics.vo2_max} onIonChange={e => handleInputChange('performance_metrics.vo2_max', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Avg Speed (km/h)</IonLabel><IonInput type="number" value={profileData.performance_metrics.avg_speed} onIonChange={e => handleInputChange('performance_metrics.avg_speed', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Max Speed (km/h)</IonLabel><IonInput type="number" value={profileData.performance_metrics.max_speed} onIonChange={e => handleInputChange('performance_metrics.max_speed', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Avg Power (W)</IonLabel><IonInput type="number" value={profileData.performance_metrics.avg_power} onIonChange={e => handleInputChange('performance_metrics.avg_power', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Max Power (W)</IonLabel><IonInput type="number" value={profileData.performance_metrics.max_power} onIonChange={e => handleInputChange('performance_metrics.max_power', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Avg Heart Rate (bpm)</IonLabel><IonInput type="number" value={profileData.performance_metrics.avg_heart_rate} onIonChange={e => handleInputChange('performance_metrics.avg_heart_rate', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Max Heart Rate (bpm)</IonLabel><IonInput type="number" value={profileData.performance_metrics.max_heart_rate} onIonChange={e => handleInputChange('performance_metrics.max_heart_rate', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Avg Cadence (rpm)</IonLabel><IonInput type="number" value={profileData.performance_metrics.cadence.avg} onIonChange={e => handleInputChange('performance_metrics.cadence.avg', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Max Cadence (rpm)</IonLabel><IonInput type="number" value={profileData.performance_metrics.cadence.max} onIonChange={e => handleInputChange('performance_metrics.cadence.max', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Weekly Distance (km)</IonLabel><IonInput type="number" value={profileData.performance_metrics.weekly_distance} onIonChange={e => handleInputChange('performance_metrics.weekly_distance', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Monthly Elevation Gain (m)</IonLabel><IonInput type="number" value={profileData.performance_metrics.monthly_elevation_gain} onIonChange={e => handleInputChange('performance_metrics.monthly_elevation_gain', e.detail.value, 'number')} /></IonItem>
-                        </IonList>
-                    </CollapsibleCard>
-
-                    <CollapsibleCard title="Training Profile">
-                        <IonList style={{ marginInline: '0' }}>
-                            <IonItem><IonLabel>Training Style</IonLabel><IonSelect value={profileData.training_profile.training_style} onIonChange={e => handleInputChange('training_profile.training_style', e.detail.value)}>{TRAINING_STYLE_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                            <IonItem><IonLabel position="stacked">Feedback Style</IonLabel><IonInput value={profileData.training_profile.feedback_style} onIonChange={e => handleInputChange('training_profile.feedback_style', e.detail.value)} /></IonItem>
-                            <IonItem><IonLabel position="stacked">Heart Rate Zones (comma-separated)</IonLabel><IonTextarea value={profileData.training_profile.zones.heart_rate.join(', ')} onIonChange={e => handleInputChange('training_profile.zones.heart_rate', e.detail.value, 'string[]')} /></IonItem>
-                            <IonItem><IonLabel position="stacked">Power Zones (comma-separated)</IonLabel><IonTextarea value={profileData.training_profile.zones.power.join(', ')} onIonChange={e => handleInputChange('training_profile.zones.power', e.detail.value, 'string[]')} /></IonItem>
-                            <IonItem><IonLabel>TSS</IonLabel><IonInput type="number" value={profileData.training_profile.tss} onIonChange={e => handleInputChange('training_profile.tss', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>CTL</IonLabel><IonInput type="number" value={profileData.training_profile.ctl} onIonChange={e => handleInputChange('training_profile.ctl', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>ATL</IonLabel><IonInput type="number" value={profileData.training_profile.atl} onIonChange={e => handleInputChange('training_profile.atl', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Form (TSB)</IonLabel><IonInput type="number" value={profileData.training_profile.form} onIonChange={e => handleInputChange('training_profile.form', e.detail.value, 'number')} /></IonItem>
-                        </IonList>
-                    </CollapsibleCard>
-
                     <CollapsibleCard title="Health & Lifestyle">
-                        <IonList style={{ marginInline: '0' }}>
+                        <IonList>
                             <IonItem><IonLabel>Weight (kg)</IonLabel><IonInput type="number" value={profileData.health_lifestyle.weight} onIonChange={e => handleInputChange('health_lifestyle.weight', e.detail.value, 'number')} /></IonItem>
                             <IonItem><IonLabel>Sleep Quality</IonLabel><IonSelect value={profileData.health_lifestyle.sleep_quality} onIonChange={e => handleInputChange('health_lifestyle.sleep_quality', e.detail.value)}>{SLEEP_QUALITY_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
                             <IonItem><IonLabel position="stacked">On-Bike Nutrition (comma-separated)</IonLabel><IonTextarea value={profileData.health_lifestyle.nutrition.on_bike.join(', ')} onIonChange={e => handleInputChange('health_lifestyle.nutrition.on_bike', e.detail.value, 'string[]')} /></IonItem>
@@ -341,7 +307,7 @@ export const Profile: React.FC = () => {
                     </CollapsibleCard>
 
                     <CollapsibleCard title="Achievements">
-                        <IonList style={{ marginInline: '0' }}>
+                        <IonList>
                             <IonItem><IonLabel position="stacked">Milestones (comma-separated)</IonLabel><IonTextarea value={profileData.achievements.milestones.join(', ')} onIonChange={e => handleInputChange('achievements.milestones', e.detail.value, 'string[]')} /></IonItem>
                             <IonItem><IonLabel position="stacked">Longest Ride</IonLabel><IonInput value={profileData.achievements.personal_bests.longest_ride} onIonChange={e => handleInputChange('achievements.personal_bests.longest_ride', e.detail.value)} /></IonItem>
                             <IonItem><IonLabel position="stacked">Biggest Climb</IonLabel><IonInput value={profileData.achievements.personal_bests.biggest_climb} onIonChange={e => handleInputChange('achievements.personal_bests.biggest_climb', e.detail.value)} /></IonItem>
@@ -351,7 +317,7 @@ export const Profile: React.FC = () => {
                     </CollapsibleCard>
 
                     <CollapsibleCard title="Future Intentions">
-                        <IonList style={{ marginInline: '0' }}>
+                        <IonList>
                             <IonItem><IonLabel position="stacked">Upcoming Events (comma-separated)</IonLabel><IonTextarea value={profileData.future_intentions.upcoming_events.join(', ')} onIonChange={e => handleInputChange('future_intentions.upcoming_events', e.detail.value, 'string[]')} /></IonItem>
                             <IonItem><IonLabel position="stacked">Dream Gear (comma-separated)</IonLabel><IonTextarea value={profileData.future_intentions.dream_gear.join(', ')} onIonChange={e => handleInputChange('future_intentions.dream_gear', e.detail.value, 'string[]')} /></IonItem>
                             <IonItem><IonLabel position="stacked">Seasonal Goals (comma-separated)</IonLabel><IonTextarea value={profileData.future_intentions.seasonal_goals.join(', ')} onIonChange={e => handleInputChange('future_intentions.seasonal_goals', e.detail.value, 'string[]')} /></IonItem>
@@ -359,7 +325,7 @@ export const Profile: React.FC = () => {
                     </CollapsibleCard>
 
                     <CollapsibleCard title="Personality Profile">
-                        <IonList style={{ marginInline: '0' }}>
+                        <IonList>
                             <IonItem><IonLabel position="stacked">Cycling Identity (comma-separated)</IonLabel><IonTextarea value={profileData.personality_profile.cycling_identity.join(', ')} onIonChange={e => handleInputChange('personality_profile.cycling_identity', e.detail.value, 'string[]')} /></IonItem>
                             <IonItem><IonLabel position="stacked">Motivation Triggers (comma-separated)</IonLabel><IonTextarea value={profileData.personality_profile.motivation_triggers.join(', ')} onIonChange={e => handleInputChange('personality_profile.motivation_triggers', e.detail.value, 'string[]')} /></IonItem>
                             <IonItem><IonLabel>Risk Tolerance</IonLabel><IonSelect value={profileData.personality_profile.risk_tolerance} onIonChange={e => handleInputChange('personality_profile.risk_tolerance', e.detail.value)}>{RISK_TOLERANCE_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
