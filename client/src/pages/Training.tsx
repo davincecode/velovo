@@ -1,12 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonButton, IonList, IonItem, IonLabel, IonModal, IonButtons, IonIcon } from '@ionic/react';
-import { useLocation } from 'react-router-dom';
 import { StravaService, Activity } from '../services/StravaService';
 import { close } from 'ionicons/icons';
 
-const STRAVA_CLIENT_ID = import.meta.env.VITE_STRAVA_CLIENT_ID;
-const STRAVA_CLIENT_SECRET = import.meta.env.VITE_STRAVA_CLIENT_SECRET;
-const REDIRECT_URI = window.location.origin + '/training';
 const STRAVA_TOKEN_KEY = 'strava_access_token';
 const STRAVA_ACTIVITIES_KEY = 'strava_activities_cache';
 
@@ -18,37 +14,12 @@ export const Training: React.FC = () => {
         const cachedActivities = localStorage.getItem(STRAVA_ACTIVITIES_KEY);
         return cachedActivities ? JSON.parse(cachedActivities) : [];
     });
-    const [accessToken, setAccessToken] = useState<string | null>(localStorage.getItem(STRAVA_TOKEN_KEY));
     const [showModal, setShowModal] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
-    const location = useLocation();
-
-    useEffect(() => {
-        const handleStravaRedirect = async () => {
-            const params = new URLSearchParams(location.search);
-            const code = params.get('code');
-
-            if (code && !accessToken) {
-                if (!STRAVA_CLIENT_ID || !STRAVA_CLIENT_SECRET) {
-                    console.error("Strava credentials are not configured in .env.local");
-                    return;
-                }
-                try {
-                    const tokenData = await StravaService.exchangeToken(STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, code);
-                    localStorage.setItem(STRAVA_TOKEN_KEY, tokenData.access_token);
-                    setAccessToken(tokenData.access_token);
-                    window.history.replaceState({}, document.title, "/training");
-                } catch (error) {
-                    console.error("Error exchanging Strava token:", error);
-                }
-            }
-        };
-
-        handleStravaRedirect();
-    }, [location, accessToken]);
 
     useEffect(() => {
         const fetchActivities = async () => {
+            const accessToken = localStorage.getItem(STRAVA_TOKEN_KEY);
             // Only fetch if we have a token AND no activities are cached/loaded
             if (accessToken && activities.length === 0) {
                 try {
@@ -58,33 +29,21 @@ export const Training: React.FC = () => {
                 } catch (error) {
                     console.error("Error fetching Strava activities:", error);
                     if ((error as Error).message.includes('401')) {
-                        handleDisconnect();
+                        // Token is invalid, clear it. The user will have to reconnect from settings.
+                        localStorage.removeItem(STRAVA_TOKEN_KEY);
+                        localStorage.removeItem(STRAVA_ACTIVITIES_KEY);
+                        setActivities([]);
                     }
                 }
             }
         };
 
         fetchActivities();
-    }, [accessToken, activities.length]);
+    }, [activities.length]);
 
-    const handleLogin = () => {
-        if (!STRAVA_CLIENT_ID) {
-            console.error("Strava Client ID is not configured.");
-            return;
-        }
-        const scope = 'read,activity:read_all';
-        const url = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&approval_prompt=force&scope=${scope}`;
-        window.location.href = url;
-    };
-
-    const handleDisconnect = () => {
-        localStorage.removeItem(STRAVA_TOKEN_KEY);
-        localStorage.removeItem(STRAVA_ACTIVITIES_KEY);
-        setAccessToken(null);
-        setActivities([]);
-    };
 
     const openActivityDetails = async (activity: Activity) => {
+        const accessToken = localStorage.getItem(STRAVA_TOKEN_KEY);
         if (!accessToken) return;
         try {
             const detailedActivity = await StravaService.getActivityDetails(accessToken, activity.id);
@@ -144,11 +103,8 @@ export const Training: React.FC = () => {
                     </IonContent>
                 </IonModal>
 
-                {!accessToken ? (
-                    <IonButton expand="block" onClick={handleLogin}>Connect with Strava</IonButton>
-                ) : (
+                {activities.length > 0 ? (
                     <>
-                        <IonButton expand="block" color="light" onClick={handleDisconnect}>Disconnect Strava</IonButton>
                         <p>Your recent Strava activities:</p>
                         <IonList>
                             {activities.map(activity => (
@@ -161,6 +117,8 @@ export const Training: React.FC = () => {
                             ))}
                         </IonList>
                     </>
+                ) : (
+                    <p>No Strava activities found. Connect your Strava account from the Settings page.</p>
                 )}
             </IonContent>
         </IonPage>

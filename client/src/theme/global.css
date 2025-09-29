@@ -80,3 +80,10 @@ body {
 .markdown-content strong {
     font-weight: bold;
 }
+
+.statRowStyle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    white-space: nowrap;
+}
