@@ -7,9 +7,9 @@ export interface UserProfile {
   achievements: Achievements;
   future_intentions: FutureIntentions;
   personality_profile: PersonalityProfile;
-  stravaAccessToken?: string; // Added stravaAccessToken
-  stravaRefreshToken?: string; // Added stravaRefreshToken
-  stravaExpiresAt?: number; // Added stravaExpiresAt
+  stravaAccessToken?: string;
+  stravaRefreshToken?: string;
+  stravaExpiresAt?: number;
 }
 
 export interface BasicInfo {
@@ -49,6 +49,8 @@ export interface HealthLifestyle {
     off_bike: string[];
   };
   injury_history: string[];
+  ftp?: number; // Added ftp
+  max_hr?: number; // Added max_hr
 }
 
 export interface Achievements {

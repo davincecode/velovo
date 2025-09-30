@@ -59,7 +59,9 @@ const sampleData: UserProfile = {
             on_bike: [],
             off_bike: []
         },
-        injury_history: []
+        injury_history: [],
+        ftp: 0,
+        max_hr: 0,
     },
     achievements: {
         milestones: [],
@@ -351,6 +353,8 @@ export const Profile: React.FC = () => {
                     <CollapsibleCard title="Health & Lifestyle">
                         <IonList>
                             <IonItem><IonLabel>Weight (kg)</IonLabel><IonInput type="number" value={profileData.health_lifestyle.weight} onIonChange={e => handleInputChange('health_lifestyle.weight', e.detail.value, 'number')} /></IonItem>
+                            <IonItem><IonLabel>Current FTP (W)</IonLabel><IonInput type="number" value={profileData.health_lifestyle.ftp} onIonChange={e => handleInputChange('health_lifestyle.ftp', e.detail.value, 'number')} /></IonItem>
+                            <IonItem><IonLabel>Max Heart Rate (bpm)</IonLabel><IonInput type="number" value={profileData.health_lifestyle.max_hr} onIonChange={e => handleInputChange('health_lifestyle.max_hr', e.detail.value, 'number')} /></IonItem>
                             <IonItem style={{ '--color': 'var(--ion-color-dark-contrast)' }}><IonLabel>Sleep Quality</IonLabel><IonSelect value={profileData.health_lifestyle.sleep_quality} onIonChange={e => handleInputChange('health_lifestyle.sleep_quality', e.detail.value)}>{SLEEP_QUALITY_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
                             <IonItem><IonLabel position="stacked">On-Bike Nutrition (comma-separated)</IonLabel><IonTextarea value={profileData.health_lifestyle.nutrition.on_bike.join(', ')} onIonChange={e => handleInputChange('health_lifestyle.nutrition.on_bike', e.detail.value, 'string[]')} /></IonItem>
                             <IonItem><IonLabel position="stacked">Off-Bike Nutrition (comma-separated)</IonLabel><IonTextarea value={profileData.health_lifestyle.nutrition.off_bike.join(', ')} onIonChange={e => handleInputChange('health_lifestyle.nutrition.off_bike', e.detail.value, 'string[]')} /></IonItem>
