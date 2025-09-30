@@ -8,7 +8,7 @@ import { db } from '../services/firebase';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { UserProfile } from '../userProfile';
 import { clearChatHistory } from '../services/userService';
-import { StravaService, Activity } from '../services/StravaService'; // Import Activity
+import { useStravaData } from '../context/StravaContext'; // Import from StravaContext
 import '../theme/global.css';
 
 interface ChatMessage {
@@ -24,11 +24,26 @@ export const Chat: React.FC = () => {
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(true);
     const [isCoachTyping, setIsCoachTyping] = useState(false);
-    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-    const [stravaActivities, setStravaActivities] = useState<Activity[]>([]); // New state for Strava activities
     const [presentAlert] = useIonAlert();
 
+    // Use the centralized Strava data hook
+    const { activities: stravaActivities, latestFitness, latestFatigue, latestBalance, hasOvertrainingWarning, loading: stravaLoading, isConnected: stravaConnected } = useStravaData();
+
     const userId = user?.id;
+
+    // Fetch user profile separately if needed for other parts of the prompt
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    useEffect(() => {
+        if (!userId) return;
+        const fetchProfile = async () => {
+            const userDocRef = doc(db, 'users', userId);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+                setUserProfile(userDocSnap.data() as UserProfile);
+            }
+        };
+        fetchProfile();
+    }, [userId]);
 
     useEffect(() => {
         if (!userId) {
@@ -36,45 +51,20 @@ export const Chat: React.FC = () => {
             return;
         }
 
-        const fetchData = async () => {
-            // Fetch User Profile
-            const userDocRef = doc(db, 'users', userId);
-            const userDocSnap = await getDoc(userDocRef);
-            if (userDocSnap.exists()) {
-                const profile = userDocSnap.data() as UserProfile;
-                setUserProfile(profile);
+        // Fetch Chat Messages
+        const messagesCollectionRef = collection(db, `users/${userId}/messages`);
+        const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
 
-                // Fetch Strava Activities if access token exists
-                if (profile.stravaAccessToken) { // Assuming stravaAccessToken is part of UserProfile
-                    try {
-                        const activities = await StravaService.getActivities(profile.stravaAccessToken, 1, 10); // Get last 10 activities
-                        setStravaActivities(activities);
-                    } catch (error) {
-                        console.error("Chat.tsx: Error fetching Strava activities: ", error);
-                        // Optionally, handle token refresh here if 401 Unauthorized
-                    }
-                }
-            } else {
-                console.log("Chat.tsx: No user profile found.");
-            }
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedMessages: ChatMessage[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Omit<ChatMessage, 'id'> }));
+            setMessages(fetchedMessages);
+            setLoading(false);
+        }, (error) => {
+            console.error("Chat.tsx: Error fetching messages: ", error);
+            setLoading(false);
+        });
 
-            // Fetch Chat Messages
-            const messagesCollectionRef = collection(db, `users/${userId}/messages`);
-            const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
-
-            const unsubscribe = onSnapshot(q, (snapshot) => {
-                const fetchedMessages: ChatMessage[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Omit<ChatMessage, 'id'> }));
-                setMessages(fetchedMessages);
-                setLoading(false);
-            }, (error) => {
-                console.error("Chat.tsx: Error fetching messages: ", error);
-                setLoading(false);
-            });
-
-            return () => unsubscribe();
-        };
-
-        fetchData();
+        return () => unsubscribe();
     }, [userId]);
 
     const handleClearChat = () => {
@@ -111,27 +101,58 @@ export const Chat: React.FC = () => {
         try {
             await addDoc(collection(db, `users/${userId}/messages`), userMsg);
 
-            let systemPrompt = 'You are a world-class cycling coach. Your primary goal is to provide encouraging and actionable advice based on the user\'s profile and their ongoing conversation with you.';
-            systemPrompt += '\n\n**CRITICAL INSTRUCTION: You MUST treat this conversation as a continuous dialogue. Before answering, review the ENTIRE chat history provided. Your advice must be context-aware and build upon previous messages, recommendations, and user-provided data. Do not repeat advice or ask for information that has already been given.**';
+            let systemPromptParts: string[] = [];
+            let assistantText = ''; // This will hold the pre-generated warning if applicable
+
+            // --- Critical Fatigue Logic using data from useStravaData hook ---
+            if (hasOvertrainingWarning) {
+                assistantText = `**URGENT WARNING: Vince, your latest training data shows an OVERTRAINING WARNING 😨. I strongly recommend prioritizing immediate rest and recovery. Please do NOT engage in any intense cycling activity today. We need to focus on your recovery.**`;
+                systemPromptParts.push('You are a SAFETY-FIRST cycling coach. Your absolute primary goal is to reinforce the need for immediate rest and recovery due to overtraining. All subsequent advice must revolve around recovery.');
+            } else if (latestFatigue !== null && latestFatigue > 100) { // Example threshold for high fatigue
+                assistantText = `**IMPORTANT: Vince, your latest training data indicates HIGH FATIGUE (Score: ${latestFatigue}). I recommend caution and potential rest. Please avoid intense cycling activity today and focus on recovery.**`;
+                systemPromptParts.push('You are a CAUTIOUS cycling coach. Your primary goal is to recommend caution and potential rest due to high fatigue. Avoid suggesting intense cycling activity.');
+            } else {
+                systemPromptParts.push('You are a world-class cycling coach. Your primary goal is to provide encouraging and actionable advice based on the user\'s profile and their ongoing conversation with you.');
+            }
+
+            // Add the general critical instructions for continuous dialogue
+            systemPromptParts.push('\n\n**CRITICAL INSTRUCTION: You MUST treat this conversation as a continuous dialogue. Before answering, review the ENTIRE chat history provided. Your advice must be context-aware and build upon previous messages, recommendations, and user-provided data. Do not repeat advice or ask for information that has already been given.**');
+
+            // Add fatigue summary if available from the hook
+            if (latestFitness !== null || latestFatigue !== null || latestBalance !== null) {
+                systemPromptParts.push('\n**Latest Training Metrics (from most recent activity):**\n');
+                if (latestFitness !== null) systemPromptParts.push(`  - Fitness: ${latestFitness}\n`);
+                if (latestFatigue !== null) systemPromptParts.push(`  - Fatigue: ${latestFatigue}\n`);
+                if (latestBalance !== null) systemPromptParts.push(`  - Balance: ${latestBalance}\n`);
+            }
 
             if (userProfile) {
-                systemPrompt += `\n\nHere is the athlete\'s profile:\n${JSON.stringify(userProfile, null, 2)}`;
-                systemPrompt += '\n\nWhen answering, consider all aspects of their profile in conjunction with the conversation history. If you need more information, ask clarifying questions.';
+                systemPromptParts.push(`\n\nHere is the athlete\'s profile:\n${JSON.stringify(userProfile, null, 2)}`);
+                systemPromptParts.push('\n\nWhen answering, consider all aspects of their profile in conjunction with the conversation history. If you need more information, ask clarifying questions.');
             }
 
-            // Add Strava activities to the system prompt
             if (stravaActivities.length > 0) {
-                systemPrompt += `\n\nHere are the athlete's last ${stravaActivities.length} Strava activities:\n`;
+                systemPromptParts.push(`\n\nHere are the athlete's last ${stravaActivities.length} Strava activities (full details below):`);
                 stravaActivities.forEach((activity, index) => {
-                    systemPrompt += `Activity ${index + 1}: ${activity.name} (${activity.type}), Distance: ${(activity.distanceM / 1000).toFixed(2)} km, Time: ${(activity.movingTimeS / 60).toFixed(0)} min, Date: ${new Date(activity.startDate).toLocaleDateString()}\n`;
+                    systemPromptParts.push(`\nActivity ${index + 1}: ${activity.name} (${activity.type}), Distance: ${(activity.distanceM / 1000).toFixed(2)} km, Time: ${(activity.movingTimeS / 60).toFixed(0)} min, Date: ${new Date(activity.startDate).toLocaleDateString()}`); 
+                    if (activity.description) {
+                        systemPromptParts.push(`\n  Description: ${activity.description}`); 
+                    }
+                    if (activity.privateNote) {
+                        systemPromptParts.push(`\n  Private Note (contains detailed training metrics): ${activity.privateNote}`); 
+                    }
                 });
-                systemPrompt += '\nConsider these activities when providing advice. Focus on recent performance and trends.';
+                systemPromptParts.push('\n'); 
             }
 
+            let systemPrompt = systemPromptParts.join('');
 
-            const currentMessagesForAI = messages.map(m => ({ role: m.role, content: m.content }));
-            const reply = await AIService.chat(systemPrompt, [...currentMessagesForAI, { role: userMsg.role, content: userMsg.content }]);
-            const assistantText = reply?.text ?? 'Sorry, I could not provide a response.';
+            // If a critical warning was generated, use it directly. Otherwise, call AIService.chat.
+            if (!assistantText) {
+                const currentMessagesForAI = messages.map(m => ({ role: m.role, content: m.content }));
+                const reply = await AIService.chat(systemPrompt, [...currentMessagesForAI, { role: userMsg.role, content: userMsg.content }]);
+                assistantText = reply?.text ?? 'Sorry, I could not provide a response.';
+            }
 
             const assistantMsg: ChatMessage = { role: 'assistant', content: assistantText, timestamp: serverTimestamp() };
             await addDoc(collection(db, `users/${userId}/messages`), assistantMsg);
@@ -160,7 +181,7 @@ export const Chat: React.FC = () => {
             </IonHeader>
             <IonContent className="ion-padding">
                 <div className="chat-container">
-                    {loading ? <p>Loading messages...</p> : messages.length === 0 ? (
+                    {loading || stravaLoading ? <p>Loading messages and Strava data...</p> : messages.length === 0 ? (
                         <div className="initial-greeting">
                             <h3>Hey {userProfile?.basic_info?.name ?? 'Vince'}!</h3>
                             <p>

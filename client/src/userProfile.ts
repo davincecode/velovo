@@ -7,6 +7,9 @@ export interface UserProfile {
   achievements: Achievements;
   future_intentions: FutureIntentions;
   personality_profile: PersonalityProfile;
+  stravaAccessToken?: string; // Added stravaAccessToken
+  stravaRefreshToken?: string; // Added stravaRefreshToken
+  stravaExpiresAt?: number; // Added stravaExpiresAt
 }
 
 export interface BasicInfo {

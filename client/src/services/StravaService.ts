@@ -146,7 +146,9 @@ export const StravaService: StravaServiceType = {
                 maxSpeed: a.max_speed,
                 averageCadence: a.average_cadence,
                 maxCadence: a.max_cadence,
-                calories: a.calories
+                calories: a.calories,
+                description: a.description,
+                privateNote: a.private_note
             };
         });
     }

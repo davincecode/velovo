@@ -12,7 +12,7 @@ import {
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { home, chatbubbleEllipses, barbell, personCircle } from 'ionicons/icons';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
 import { Chat } from './pages/Chat';
 import { Home } from './pages/Home';
 import { Profile } from './pages/Profile';
@@ -97,9 +97,7 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => (
     <IonApp>
         <IonReactRouter>
-            <AuthProvider>
-                <AppContent />
-            </AuthProvider>
+            <AppContent />
         </IonReactRouter>
     </IonApp>
 );
