@@ -14,7 +14,7 @@ const STRAVA_ACTIVITIES_KEY = 'strava_activities_cache';
 const ACTIVITIES_PER_PAGE = 10;
 
 // Helper to format seconds into HH:MM:SS
-const formatTime = (seconds: number) => new Date(seconds * 1000).toISOString().substring(11, 19);
+const formatTime = (seconds: number) => new Date(seconds * 1000).toISOString().substr(11, 8);
 
 export const Home: React.FC = () => {
     const { user } = useAuth();
@@ -45,7 +45,7 @@ export const Home: React.FC = () => {
                 }
             }
         };
-        void fetchUserProfile();
+        fetchUserProfile();
     }, [user?.id]);
 
     const fetchActivities = async (pageNum: number, perPage: number) => {
@@ -74,18 +74,20 @@ export const Home: React.FC = () => {
         // Clear cache and fetch initial activities only if activities are not already loaded
         if (activities.length === 0) {
             localStorage.removeItem(STRAVA_ACTIVITIES_KEY);
-            void fetchActivities(1, ACTIVITIES_PER_PAGE);
+            fetchActivities(1, ACTIVITIES_PER_PAGE);
             setPage(2);
         }
     }, []); // Run only once on mount
 
-    const loadMoreActivities = async (event: CustomEvent<void>) => {
-        const infiniteScroll = event.target as HTMLIonInfiniteScrollElement;
-        if (hasMore) {
-            await fetchActivities(page, ACTIVITIES_PER_PAGE);
-            setPage(page + 1);
+    const loadMoreActivities = (event: CustomEvent<void>) => {
+        if (!hasMore) {
+            (event.target as HTMLIonInfiniteScrollElement).complete();
+            return;
         }
-        infiniteScroll.complete();
+        fetchActivities(page, ACTIVITIES_PER_PAGE).then(() => {
+            setPage(page + 1);
+            (event.target as HTMLIonInfiniteScrollElement).complete();
+        });
     };
 
 
@@ -138,7 +140,7 @@ export const Home: React.FC = () => {
                                         <div className="statRowStyle"><strong>Total Work:</strong><span>{selectedActivity.kilojoules?.toLocaleString()}{'\u00A0'}kJ</span></div>
                                     </div>
                                 </div>
-                                
+
                                 {selectedActivity.description && (
                                     <div style={{ marginTop: '16px' }}>
                                         <h3>Description</h3>
