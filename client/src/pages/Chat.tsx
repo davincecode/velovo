@@ -7,7 +7,8 @@ import { AIService } from '../services/AIService';
 import { db } from '../services/firebase';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { UserProfile } from '../userProfile';
-import { clearChatHistory } from '../services/userService'; // Import the new service
+import { clearChatHistory } from '../services/userService';
+import { StravaService, Activity } from '../services/StravaService'; // Import Activity
 import '../theme/global.css';
 
 interface ChatMessage {
@@ -24,6 +25,7 @@ export const Chat: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isCoachTyping, setIsCoachTyping] = useState(false);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [stravaActivities, setStravaActivities] = useState<Activity[]>([]); // New state for Strava activities
     const [presentAlert] = useIonAlert();
 
     const userId = user?.id;
@@ -34,31 +36,45 @@ export const Chat: React.FC = () => {
             return;
         }
 
-        const fetchUserProfile = async () => {
+        const fetchData = async () => {
+            // Fetch User Profile
             const userDocRef = doc(db, 'users', userId);
             const userDocSnap = await getDoc(userDocRef);
             if (userDocSnap.exists()) {
-                setUserProfile(userDocSnap.data() as UserProfile);
+                const profile = userDocSnap.data() as UserProfile;
+                setUserProfile(profile);
+
+                // Fetch Strava Activities if access token exists
+                if (profile.stravaAccessToken) { // Assuming stravaAccessToken is part of UserProfile
+                    try {
+                        const activities = await StravaService.getActivities(profile.stravaAccessToken, 1, 10); // Get last 10 activities
+                        setStravaActivities(activities);
+                    } catch (error) {
+                        console.error("Chat.tsx: Error fetching Strava activities: ", error);
+                        // Optionally, handle token refresh here if 401 Unauthorized
+                    }
+                }
             } else {
                 console.log("Chat.tsx: No user profile found.");
             }
+
+            // Fetch Chat Messages
+            const messagesCollectionRef = collection(db, `users/${userId}/messages`);
+            const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                const fetchedMessages: ChatMessage[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Omit<ChatMessage, 'id'> }));
+                setMessages(fetchedMessages);
+                setLoading(false);
+            }, (error) => {
+                console.error("Chat.tsx: Error fetching messages: ", error);
+                setLoading(false);
+            });
+
+            return () => unsubscribe();
         };
 
-        fetchUserProfile();
-
-        const messagesCollectionRef = collection(db, `users/${userId}/messages`);
-        const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedMessages: ChatMessage[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Omit<ChatMessage, 'id'> }));
-            setMessages(fetchedMessages);
-            setLoading(false);
-        }, (error) => {
-            console.error("Chat.tsx: Error fetching messages: ", error);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
+        fetchData();
     }, [userId]);
 
     const handleClearChat = () => {
@@ -102,6 +118,16 @@ export const Chat: React.FC = () => {
                 systemPrompt += `\n\nHere is the athlete\'s profile:\n${JSON.stringify(userProfile, null, 2)}`;
                 systemPrompt += '\n\nWhen answering, consider all aspects of their profile in conjunction with the conversation history. If you need more information, ask clarifying questions.';
             }
+
+            // Add Strava activities to the system prompt
+            if (stravaActivities.length > 0) {
+                systemPrompt += `\n\nHere are the athlete's last ${stravaActivities.length} Strava activities:\n`;
+                stravaActivities.forEach((activity, index) => {
+                    systemPrompt += `Activity ${index + 1}: ${activity.name} (${activity.type}), Distance: ${(activity.distanceM / 1000).toFixed(2)} km, Time: ${(activity.movingTimeS / 60).toFixed(0)} min, Date: ${new Date(activity.startDate).toLocaleDateString()}\n`;
+                });
+                systemPrompt += '\nConsider these activities when providing advice. Focus on recent performance and trends.';
+            }
+
 
             const currentMessagesForAI = messages.map(m => ({ role: m.role, content: m.content }));
             const reply = await AIService.chat(systemPrompt, [...currentMessagesForAI, { role: userMsg.role, content: userMsg.content }]);
