@@ -48,13 +48,9 @@ export const PerformanceCard: React.FC = () => {
                     setCurrentFtp(estimated);
                 } else if (userProfile?.health_lifestyle?.ftp) {
                     setCurrentFtp(userProfile.health_lifestyle.ftp);
-                } else {
-                    setCurrentFtp(183); // Fallback to default if no estimation and no user profile FTP
                 }
             } else if (userProfile?.health_lifestyle?.ftp) {
                 setCurrentFtp(userProfile.health_lifestyle.ftp);
-            } else {
-                setCurrentFtp(183); // Fallback to default if no activities and no user profile FTP
             }
         };
 
@@ -121,12 +117,22 @@ export const PerformanceCard: React.FC = () => {
         <section>
             <h3>Performance Status</h3>
             <div style={{ marginBottom: '1.5rem' }}>
-                <p className="ftp-highlight" style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <p className="ftp-highlight" style={{
+                    marginBottom: '0.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'linear-gradient(to right, #0033A0, #E4002B, #000000, #FBB613, #008230)', // UCI Rainbow Colors
+                    padding: '0.5rem',
+                    borderRadius: '5px',
+                    color: 'white',
+                    fontWeight: 'bold'
+                }}>
                     <span><strong>Current FTP:</strong> {currentFtp ? `${currentFtp} W` : 'N/A'}</span>
                     <IonIcon
                         icon={helpCircleOutline}
                         onClick={handleFtpInfoClick}
-                        style={{ fontSize: '1.5em', verticalAlign: 'middle', cursor: 'pointer' }}
+                        style={{ fontSize: '1.5em', verticalAlign: 'middle', cursor: 'pointer', color: 'white' }}
                     />
                 </p>
                 <p style={{ margin: '0' }}><strong>Current Max HR:</strong> {maxHr ? `${maxHr} bpm` : 'N/A'}</p>
