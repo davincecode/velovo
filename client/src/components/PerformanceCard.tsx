@@ -4,17 +4,17 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { UserProfile } from '../userProfile';
-import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { TrainingAnalyticsService, FitnessData } from '../services/TrainingAnalyticsService';
 
 export const PerformanceCard: React.FC = () => {
     const { user } = useAuth();
-    const { activities, loading: stravaLoading } = useStravaData();
+    const { activities, loading: stravaLoading, stravaAccessToken } = useStravaData();
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [fitnessData, setFitnessData] = useState<FitnessData | null>(null);
     const [aiMessage, setAiMessage] = useState<string>('');
-    const [estimatedFtp, setEstimatedFtp] = useState<number>(183); // Default FTP
+    const [currentFtp, setCurrentFtp] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -25,9 +25,8 @@ export const PerformanceCard: React.FC = () => {
                     if (userDocSnap.exists()) {
                         const profile = userDocSnap.data() as UserProfile;
                         setUserProfile(profile);
-                        // Safely access ftp. The 'health_lifestyle' object or 'ftp' property might not exist in the data.
                         if (profile.health_lifestyle && typeof profile.health_lifestyle.ftp === 'number') {
-                            setEstimatedFtp(profile.health_lifestyle.ftp);
+                            setCurrentFtp(profile.health_lifestyle.ftp);
                         }
                     }
                 } catch (error) {
@@ -40,12 +39,34 @@ export const PerformanceCard: React.FC = () => {
     }, [user?.id]);
 
     useEffect(() => {
-        // Use all available activities for a more accurate calculation
-        if (activities && activities.length > 0 && estimatedFtp > 0) {
+        const estimateAndSetFtp = async () => {
+            if (activities.length > 0 && stravaAccessToken) {
+                const estimated = await TrainingAnalyticsService.estimateFtpFromActivities(activities, stravaAccessToken);
+                if (estimated) {
+                    setCurrentFtp(estimated);
+                } else if (userProfile?.health_lifestyle?.ftp) {
+                    setCurrentFtp(userProfile.health_lifestyle.ftp);
+                } else {
+                    setCurrentFtp(183); // Fallback to default if no estimation and no user profile FTP
+                }
+            } else if (userProfile?.health_lifestyle?.ftp) {
+                setCurrentFtp(userProfile.health_lifestyle.ftp);
+            } else {
+                setCurrentFtp(183); // Fallback to default if no activities and no user profile FTP
+            }
+        };
+
+        if (!stravaLoading && !loadingProfile) {
+            estimateAndSetFtp();
+        }
+    }, [activities, stravaAccessToken, userProfile, stravaLoading, loadingProfile]);
+
+    useEffect(() => {
+        if (activities && activities.length > 0 && currentFtp && currentFtp > 0) {
             const dailyLoads = activities.map(activity => ({
                 date: new Date(activity.startDate),
-                tss: TrainingAnalyticsService.calculateTss(activity, estimatedFtp)
-            })).filter(load => load.tss > 0); // Filter out activities with 0 TSS
+                tss: TrainingAnalyticsService.calculateTss(activity, currentFtp)
+            })).filter(load => load.tss > 0);
 
             if (dailyLoads.length > 0) {
                 const { ctl, atl } = TrainingAnalyticsService.calculateFitnessAndFatigue(dailyLoads);
@@ -53,59 +74,51 @@ export const PerformanceCard: React.FC = () => {
 
                 setFitnessData({ ctl, atl, tsb });
 
-                // The AI message is generated for the most recent activity
                 const latestActivity = activities[0];
                 const latestTss = dailyLoads.find(load => new Date(latestActivity.startDate).getTime() === load.date.getTime())?.tss || 0;
                 const message = TrainingAnalyticsService.generateAiMessage(latestActivity, ctl, atl, tsb, latestTss);
                 setAiMessage(message);
             }
         }
-    }, [activities, estimatedFtp]);
+    }, [activities, currentFtp]);
 
-    if (stravaLoading || loadingProfile) {
+    if (stravaLoading || loadingProfile || currentFtp === null) {
         return (
-            <IonCard>
-                <IonCardContent style={{ textAlign: 'center' }}>
-                    <IonSpinner />
-                    <p>Loading Performance Data...</p>
-                </IonCardContent>
-            </IonCard>
+            <div style={{ textAlign: 'center' }}>
+                <IonSpinner />
+                <p>Loading Performance Data...</p>
+            </div>
         );
     }
 
-    // Safely access max_hr from the user profile.
     const maxHr = userProfile && userProfile.health_lifestyle ? userProfile.health_lifestyle.max_hr : undefined;
 
     return (
-        <IonCard>
-            <IonCardHeader>
-                <IonCardTitle>Performance Status</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-                <div style={{ marginBottom: '1rem' }}>
-                    <p><strong>1. Current FTP:</strong> {estimatedFtp ? `${estimatedFtp} W` : 'N/A'}</p>
-                    <p><strong>2. Current Max HR:</strong> {maxHr ? `${maxHr} bpm` : 'N/A'}</p>
-                    <p><strong>3. Current training status:</strong></p>
-                    <ul style={{ listStyle: 'none', paddingLeft: '1rem' }}>
-                        <li>a. 🚴 Fitness (CTL): {fitnessData?.ctl ?? 'N/A'}</li>
-                        <li>b. 💤 Fatigue (ATL): {fitnessData?.atl ?? 'N/A'}</li>
-                        <li>c. ⚖️ Balance (TSB): {fitnessData?.tsb ?? 'N/A'}</li>
-                    </ul>
-                </div>
+        <section>
+            <h3>Performance Status</h3>
+            <div style={{ marginBottom: '1rem' }}>
+                <p><strong>Current FTP:</strong> {currentFtp ? `${currentFtp} W` : 'N/A'}</p>
+                <p><strong>Current Max HR:</strong> {maxHr ? `${maxHr} bpm` : 'N/A'}</p>
+                <p><strong>Current training status:</strong></p>
+                <ul style={{ listStyle: 'none', paddingLeft: '1rem' }}>
+                    <li>a. 🚴 Fitness (CTL): {fitnessData?.ctl ?? 'N/A'}</li>
+                    <li>b. 💤 Fatigue (ATL): {fitnessData?.atl ?? 'N/A'}</li>
+                    <li>c. ⚖️ Balance (TSB): {fitnessData?.tsb ?? 'N/A'}</li>
+                </ul>
+            </div>
 
-                <div style={{ marginBottom: '1rem' }}>
-                    <p><strong>4. AI generated comments:</strong></p>
-                    <div style={{ border: '1px solid var(--ion-color-medium)', borderRadius: '5px', padding: '0.5rem', fontSize: '0.9rem' }}>
-                        <p>{aiMessage || 'Not enough data to generate comments.'}</p>
-                    </div>
+            <div style={{ marginBottom: '1rem' }}>
+                <p><strong>AI generated comments:</strong></p>
+                <div style={{ border: '1px solid var(--ion-color-medium)', borderRadius: '5px', padding: '0.5rem', fontSize: '0.9rem' }}>
+                    <p>{aiMessage || 'Not enough data to generate comments.'}</p>
                 </div>
+            </div>
 
-                <div style={{ fontSize: '0.8rem', color: 'var(--ion-color-medium-shade)' }}>
-                    <p><strong>Balance Guide:</strong> A TSB between -10 and -30 suggests a good balance of training and recovery. Above +15 indicates rest, while below -30 may mean overtraining.</p>
-                    <p><strong>Fitness (CTL):</strong> Reflects your training load over the last 42 days. A higher number indicates greater fitness.</p>
-                    <p><strong>Fatigue (ATL):</strong> Reflects your training load over the last 7 days. A high number suggests recent hard training.</p>
-                </div>
-            </IonCardContent>
-        </IonCard>
+            <div style={{ fontSize: '0.8rem', color: 'var(--ion-color-medium-shade)' }}>
+                <p><strong>Balance Guide:</strong> A TSB between -10 and -30 suggests a good balance of training and recovery. Above +15 indicates rest, while below -30 may mean overtraining.</p>
+                <p><strong>Fitness (CTL):</strong> Reflects your training load over the last 42 days. A higher number indicates greater fitness.</p>
+                <p><strong>Fatigue (ATL):</strong> Reflects your training load over the last 7 days. A high number suggests recent hard training.</p>
+            </div>
+        </section>
     );
 };

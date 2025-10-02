@@ -56,11 +56,21 @@ interface StravaRawActivity {
     private_note?: string;
 }
 
+// Type for the raw stream data from Strava API
+interface StravaStream {
+    type: string;
+    data: any[];
+    series_type: string;
+    original_size: number;
+    resolution: string;
+}
+
 
 interface StravaServiceType {
     exchangeToken(clientId: string, clientSecret: string, code: string): Promise<StravaTokenResponse>;
     getActivities(accessToken: string, page: number, perPage: number, after?: number): Promise<Activity[]>;
     getActivityDetails(accessToken: string, activityId: string): Promise<Activity>;
+    getActivityStream(accessToken: string, activityId: string, streamType: string): Promise<number[]>;
 }
 
 const API_BASE = 'https://www.strava.com/api/v3';
@@ -160,5 +170,18 @@ export const StravaService: StravaServiceType = {
                 privateNote: a.private_note
             };
         });
+    },
+
+    async getActivityStream(accessToken: string, activityId: string, streamType: string): Promise<number[]> {
+        const res = await fetch(`${API_BASE}/activities/${activityId}/streams?keys=${streamType}`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        if (!res.ok) {
+            if (res.status === 401) throw new Error('Unauthorized: 401');
+            throw new Error('Failed to fetch Strava activity stream');
+        }
+        const streams: StravaStream[] = await res.json();
+        const powerStream = streams.find(s => s.type === streamType);
+        return powerStream ? powerStream.data : [];
     }
 };

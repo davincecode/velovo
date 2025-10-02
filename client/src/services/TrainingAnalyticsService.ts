@@ -1,4 +1,4 @@
-import { Activity } from './StravaService';
+import { Activity, StravaService } from './StravaService';
 
 export interface FitnessData {
     ctl: number; // Chronic Training Load (Fitness)
@@ -94,8 +94,50 @@ const generateAiMessage = (activity: Activity, ctl: number, atl: number, tsb: nu
     return message;
 };
 
+const estimateFtpFromActivities = async (activities: Activity[], accessToken: string): Promise<number | null> => {
+    let maxEstimatedFtp: number | null = null;
+
+    for (const activity of activities) {
+        // Only consider rides with power data
+        if (activity.type === 'Ride' && (activity.averageWatts || activity.weightedAverageWatts)) {
+            try {
+                const powerStream = await StravaService.getActivityStream(accessToken, activity.id, 'watts');
+
+                if (powerStream.length === 0) {
+                    continue; // No power data stream available for this activity
+                }
+
+                let max20MinPower = 0;
+                const windowSize = 20 * 60; // 20 minutes in seconds
+
+                // Calculate rolling average for 20 minutes
+                for (let i = 0; i <= powerStream.length - windowSize; i++) {
+                    const currentWindow = powerStream.slice(i, i + windowSize);
+                    const sum = currentWindow.reduce((acc, val) => acc + val, 0);
+                    const average = sum / windowSize;
+                    if (average > max20MinPower) {
+                        max20MinPower = average;
+                    }
+                }
+
+                if (max20MinPower > 0) {
+                    const estimatedFtp = max20MinPower * 0.95;
+                    if (maxEstimatedFtp === null || estimatedFtp > maxEstimatedFtp) {
+                        maxEstimatedFtp = estimatedFtp;
+                    }
+                }
+            } catch (error) {
+                console.error(`Error fetching power stream for activity ${activity.id}:`, error);
+            }
+        }
+    }
+
+    return maxEstimatedFtp ? Math.round(maxEstimatedFtp) : null;
+};
+
 export const TrainingAnalyticsService = {
     calculateTss,
     calculateFitnessAndFatigue,
-    generateAiMessage
+    generateAiMessage,
+    estimateFtpFromActivities,
 };
