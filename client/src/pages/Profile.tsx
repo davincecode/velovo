@@ -235,16 +235,16 @@ export const Profile: React.FC = () => {
                 <form className="profile-form" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
 
                     <IonCard style={{ background: 'var(--ion-color-dark)', color: 'var(--ion-color-dark-contrast)', padding: '12px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                        <IonCardContent class="ion-no-padding">
+                        <IonCardContent className="ion-no-padding">
                             <IonGrid>
                                 <IonRow>
-                                    <IonCol size="6" class="ion-no-padding">
+                                    <IonCol size="6" className="ion-no-padding">
                                         <IonItem style={{ '--background': 'transparent', '--border-color': 'transparent' }}>
                                             <IonLabel position="stacked" style={{ color: 'var(--ion-color-dark-contrast)' }}>Name</IonLabel>
                                             <IonInput value={profileData.basic_info.name} onIonChange={e => handleInputChange('basic_info.name', e.detail.value)} style={{ '--color': 'var(--ion-color-dark-contrast)' }} />
                                         </IonItem>
                                     </IonCol>
-                                    <IonCol size="6" class="ion-no-padding">
+                                    <IonCol size="6" className="ion-no-padding">
                                         <IonItem style={{ '--background': 'transparent', '--border-color': 'transparent' }}>
                                             <IonLabel position="stacked" style={{ color: 'var(--ion-color-dark-contrast)' }}>Lastname</IonLabel>
                                             <IonInput value={profileData.basic_info.lastname} onIonChange={e => handleInputChange('basic_info.lastname', e.detail.value)} style={{ '--color': 'var(--ion-color-dark-contrast)' }} />
@@ -252,7 +252,7 @@ export const Profile: React.FC = () => {
                                     </IonCol>
                                 </IonRow>
                                 <IonRow>
-                                    <IonCol size="12" class="ion-no-padding">
+                                    <IonCol size="12" className="ion-no-padding">
                                         <IonItem style={{ '--background': 'transparent', '--border-color': 'transparent' }}>
                                             <IonLabel position="stacked" style={{ color: 'var(--ion-color-dark-contrast)' }}>Location</IonLabel>
                                             <IonInput value={profileData.basic_info.location} onIonChange={e => handleInputChange('basic_info.location', e.detail.value)} style={{ '--color': 'var(--ion-color-dark-contrast)' }} />
@@ -260,21 +260,31 @@ export const Profile: React.FC = () => {
                                     </IonCol>
                                 </IonRow>
                                 <IonRow>
-                                    <IonCol size="12" class="ion-no-padding">
+                                    <IonCol size="12" className="ion-no-padding">
                                         <IonItem style={{ '--background': 'transparent', '--border-color': 'transparent', '--color': 'var(--ion-color-dark-contrast)' }}>
-                                            <IonLabel>Cycling Level</IonLabel><IonSelect value={profileData.basic_info.cycling_level} onIonChange={e => handleInputChange('basic_info.cycling_level', e.detail.value)}>{CYCLING_LEVEL_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect>
+                                            <IonLabel>Cycling Level</IonLabel>
+                                            <IonSelect
+                                                interface="popover"
+                                                value={profileData.basic_info.cycling_level}
+                                                onIonChange={e => handleInputChange('basic_info.cycling_level', e.detail.value)}
+                                                slot="end"
+                                            >
+                                                {CYCLING_LEVEL_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}
+                                            </IonSelect>
                                         </IonItem>
                                     </IonCol>
                                 </IonRow>
                                 <IonRow>
-                                    <IonCol size="12" class="ion-no-padding">
+                                    <IonCol size="12" className="ion-no-padding">
                                         <IonItem style={{ '--background': 'transparent', '--border-color': 'transparent', '--color': 'var(--ion-color-dark-contrast)' }}>
                                             <IonLabel>Primary Discipline</IonLabel>
                                             <IonSelect
+                                                interface="popover"
                                                 multiple
                                                 value={profileData.basic_info.primary_discipline}
                                                 onIonChange={e => handleInputChange('basic_info.primary_discipline', e.detail.value)}
                                                 selectedText={getSelectedText(profileData.basic_info.primary_discipline)}
+                                                slot="end"
                                             >
                                                 {PRIMARY_DISCIPLINE_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}
                                             </IonSelect>
@@ -290,10 +300,12 @@ export const Profile: React.FC = () => {
                             <IonItem>
                                 <IonLabel>Ride Types</IonLabel>
                                 <IonSelect
+                                    interface="popover"
                                     multiple
                                     value={profileData.ride_preferences.ride_types}
                                     onIonChange={e => handleInputChange('ride_preferences.ride_types', e.detail.value)}
                                     selectedText={getSelectedText(profileData.ride_preferences.ride_types)}
+                                    slot="end"
                                 >
                                     {RIDE_TYPE_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}
                                 </IonSelect>
@@ -301,10 +313,12 @@ export const Profile: React.FC = () => {
                             <IonItem>
                                 <IonLabel>Preferred Terrain</IonLabel>
                                 <IonSelect
+                                    interface="popover"
                                     multiple
                                     value={profileData.ride_preferences.terrain}
                                     onIonChange={e => handleInputChange('ride_preferences.terrain', e.detail.value)}
                                     selectedText={getSelectedText(profileData.ride_preferences.terrain)}
+                                    slot="end"
                                 >
                                     {TERRAIN_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}
                                 </IonSelect>
@@ -351,35 +365,38 @@ export const Profile: React.FC = () => {
                         <IonList>
                             {/* Inline number inputs */}
                             <IonItem>
-                                <IonLabel position="fixed" style={{ minWidth: '140px' }}>Weight (kg)</IonLabel>
+                                <IonLabel>Weight (kg)</IonLabel>
                                 <IonInput
                                     inputmode="numeric"
                                     type="number"
                                     style={{ textAlign: 'right' }}
                                     value={profileData.health_lifestyle.weight}
                                     onIonChange={e => handleInputChange('health_lifestyle.weight', e.detail.value, 'number')}
+                                    slot="end"
                                 />
                             </IonItem>
 
                             <IonItem>
-                                <IonLabel position="fixed" style={{ minWidth: '140px' }}>Current FTP (W)</IonLabel>
+                                <IonLabel>Current FTP (W)</IonLabel>
                                 <IonInput
                                     inputmode="numeric"
                                     type="number"
                                     style={{ textAlign: 'right' }}
                                     value={profileData.health_lifestyle.ftp}
                                     onIonChange={e => handleInputChange('health_lifestyle.ftp', e.detail.value, 'number')}
+                                    slot="end"
                                 />
                             </IonItem>
 
                             <IonItem>
-                                <IonLabel position="fixed" style={{ minWidth: '140px' }}>Max Heart Rate (bpm)</IonLabel>
+                                <IonLabel>Max Heart Rate (bpm)</IonLabel>
                                 <IonInput
                                     inputmode="numeric"
                                     type="number"
                                     style={{ textAlign: 'right' }}
                                     value={profileData.health_lifestyle.max_hr}
                                     onIonChange={e => handleInputChange('health_lifestyle.max_hr', e.detail.value, 'number')}
+                                    slot="end"
                                 />
                             </IonItem>
 
@@ -430,15 +447,91 @@ export const Profile: React.FC = () => {
 
                     <CollapsibleCard title="Personality Profile">
                         <IonList>
-                            <IonItem><IonLabel position="stacked">Cycling Identity (comma-separated)</IonLabel><IonTextarea value={profileData.personality_profile.cycling_identity.join(', ')} onIonChange={e => handleInputChange('personality_profile.cycling_identity', e.detail.value, 'string[]')} /></IonItem>
-                            <IonItem><IonLabel position="stacked">Motivation Triggers (comma-separated)</IonLabel><IonTextarea value={profileData.personality_profile.motivation_triggers.join(', ')} onIonChange={e => handleInputChange('personality_profile.motivation_triggers', e.detail.value, 'string[]')} /></IonItem>
-                            <IonItem style={{ '--color': 'var(--ion-color-dark-contrast)' }}><IonLabel>Risk Tolerance</IonLabel><IonSelect value={profileData.personality_profile.risk_tolerance} onIonChange={e => handleInputChange('personality_profile.risk_tolerance', e.detail.value)}>{RISK_TOLERANCE_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                            <IonItem style={{ '--color': 'var(--ion-color-dark-contrast)' }}><IonLabel>Confidence in Group Rides</IonLabel><IonSelect value={profileData.personality_profile.confidence_zones.group_rides} onIonChange={e => handleInputChange('personality_profile.confidence_zones.group_rides', e.detail.value)}>{CONFIDENCE_ZONES_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                            <IonItem style={{ '--color': 'var(--ion-color-dark-contrast)' }}><IonLabel>Confidence on Descents</IonLabel><IonSelect value={profileData.personality_profile.confidence_zones.descents} onIonChange={e => handleInputChange('personality_profile.confidence_zones.descents', e.detail.value)}>{CONFIDENCE_ZONES_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                            <IonItem style={{ '--color': 'var(--ion-color-dark-contrast)' }}><IonLabel>Confidence in Traffic</IonLabel><IonSelect value={profileData.personality_profile.confidence_zones.traffic} onIonChange={e => handleInputChange('personality_profile.confidence_zones.traffic', e.detail.value)}>{CONFIDENCE_ZONES_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                            <IonItem><IonLabel position="stacked">Post-Ride Rituals (comma-separated)</IonLabel><IonTextarea value={profileData.personality_profile.post_ride_rituals.join(', ')} onIonChange={e => handleInputChange('personality_profile.post_ride_rituals', e.detail.value, 'string[]')} /></IonItem>
+                            {/* Stacked layout for longer text inputs */}
+                            <IonItem>
+                                <IonLabel position="stacked">Cycling Identity (comma-separated)</IonLabel>
+                                <IonTextarea
+                                    value={profileData.personality_profile.cycling_identity.join(', ')}
+                                    onIonChange={e => handleInputChange('personality_profile.cycling_identity', e.detail.value, 'string[]')}
+                                />
+                            </IonItem>
+
+                            <IonItem>
+                                <IonLabel position="stacked">Motivation Triggers (comma-separated)</IonLabel>
+                                <IonTextarea
+                                    value={profileData.personality_profile.motivation_triggers.join(', ')}
+                                    onIonChange={e => handleInputChange('personality_profile.motivation_triggers', e.detail.value, 'string[]')}
+                                />
+                            </IonItem>
+
+                            {/* Inline layout for select fields */}
+                            <IonItem>
+                                <IonLabel>Risk Tolerance</IonLabel>
+                                <IonSelect
+                                    interface="popover"
+                                    value={profileData.personality_profile.risk_tolerance}
+                                    onIonChange={e => handleInputChange('personality_profile.risk_tolerance', e.detail.value)}
+                                    slot="end"
+                                >
+                                    {RISK_TOLERANCE_OPTIONS.map(o => (
+                                        <IonSelectOption key={o} value={o}>{o}</IonSelectOption>
+                                    ))}
+                                </IonSelect>
+                            </IonItem>
+
+                            <IonItem>
+                                <IonLabel>Confidence in Group Rides</IonLabel>
+                                <IonSelect
+                                    interface="popover"
+                                    value={profileData.personality_profile.confidence_zones.group_rides}
+                                    onIonChange={e => handleInputChange('personality_profile.confidence_zones.group_rides', e.detail.value)}
+                                    slot="end"
+                                >
+                                    {CONFIDENCE_ZONES_OPTIONS.map(o => (
+                                        <IonSelectOption key={o} value={o}>{o}</IonSelectOption>
+                                    ))}
+                                </IonSelect>
+                            </IonItem>
+
+                            <IonItem>
+                                <IonLabel>Confidence on Descents</IonLabel>
+                                <IonSelect
+                                    interface="popover"
+                                    value={profileData.personality_profile.confidence_zones.descents}
+                                    onIonChange={e => handleInputChange('personality_profile.confidence_zones.descents', e.detail.value)}
+                                    slot="end"
+                                >
+                                    {CONFIDENCE_ZONES_OPTIONS.map(o => (
+                                        <IonSelectOption key={o} value={o}>{o}</IonSelectOption>
+                                    ))}
+                                </IonSelect>
+                            </IonItem>
+
+                            <IonItem>
+                                <IonLabel>Confidence in Traffic</IonLabel>
+                                <IonSelect
+                                    interface="popover"
+                                    value={profileData.personality_profile.confidence_zones.traffic}
+                                    onIonChange={e => handleInputChange('personality_profile.confidence_zones.traffic', e.detail.value)}
+                                    slot="end"
+                                >
+                                    {CONFIDENCE_ZONES_OPTIONS.map(o => (
+                                        <IonSelectOption key={o} value={o}>{o}</IonSelectOption>
+                                    ))}
+                                </IonSelect>
+                            </IonItem>
+
+                            {/* Stacked layout for longer text input */}
+                            <IonItem>
+                                <IonLabel position="stacked">Post-Ride Rituals (comma-separated)</IonLabel>
+                                <IonTextarea
+                                    value={profileData.personality_profile.post_ride_rituals.join(', ')}
+                                    onIonChange={e => handleInputChange('personality_profile.post_ride_rituals', e.detail.value, 'string[]')}
+                                />
+                            </IonItem>
                         </IonList>
                     </CollapsibleCard>
+
 
                     <IonButton expand="block" type="submit" className="ion-margin-top" disabled={showSavingLoading}>Save Profile</IonButton>
                 </form>
