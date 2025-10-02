@@ -113,7 +113,7 @@ export const Home: React.FC = () => {
                 </IonRefresher>
 
                 <PerformanceCard />
-                
+
                 <section style={{marginTop:16}}>
                     <h3>Recent Activities</h3>
                     {stravaLoading && activities.length === 0 ? (
@@ -130,7 +130,7 @@ export const Home: React.FC = () => {
                                     const power = ('weightedAverageWatts' in activity && typeof activity.weightedAverageWatts === 'number')
                                         ? activity.weightedAverageWatts
                                         : activity.averageWatts;
-                                    
+
                                     let tss = 0;
                                     let intensityFactor = 0;
                                     if (currentFtp && currentFtp > 0 && power && activity.movingTimeS) {
@@ -145,7 +145,7 @@ export const Home: React.FC = () => {
                                                 <p><small>{new Date(activity.startDate).toLocaleDateString()}</small></p>
                                                 {activity.description && <p><em>{activity.description}</em></p>}
                                                 <div style={{ marginTop: '8px' }}>
-                                                    <div className="statRowStyle"><strong>Distance:</strong><span>{(activity.distanceM / 1000).toFixed(2)} km</span></div>
+                                                    <div className="statRowStyle"><strong>Distance:</strong><span>{(activity.distanceM / 1000).toFixed(2)} km</span></div>
                                                     <div className="statRowStyle"><strong>Duration:</strong><span>{formatTime(activity.movingTimeS)}</span></div>
                                                     <div className="statRowStyle">
                                                         <strong>Avg Power:</strong><span>{power ? power.toFixed(0) + '\u00A0' + 'W' : 'N/A'}</span>
@@ -161,7 +161,7 @@ export const Home: React.FC = () => {
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <IonButton 
+                                                <IonButton
                                                     href={`https://www.strava.com/activities/${activity.id}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
@@ -172,9 +172,9 @@ export const Home: React.FC = () => {
                                                 </IonButton>
                                             </IonLabel>
                                             {/* Moved IonIcon to upper right corner of IonItem */}
-                                            <IonIcon 
-                                                icon={helpCircleOutline} 
-                                                onClick={handleInfoIconClick} 
+                                            <IonIcon
+                                                icon={helpCircleOutline}
+                                                onClick={handleInfoIconClick}
                                                 style={{
                                                     position: 'absolute',
                                                     top: '10px', // Adjust as needed
@@ -197,10 +197,9 @@ export const Home: React.FC = () => {
                     )}
                 </section>
 
-                <IonModal 
-                    isOpen={showInfoModal} 
+                <IonModal
+                    isOpen={showInfoModal}
                     onDidDismiss={handleModalClose}
-                    cssClass="activity-score-modal"
                 >
                     <IonHeader>
                         <IonToolbar>
