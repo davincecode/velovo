@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonList, IonItem, IonLabel, IonRefresher, IonRefresherContent, IonButton, IonIcon, IonModal, IonButtons } from '@ionic/react';
+import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonList, IonItem, IonLabel, IonRefresher, IonRefresherContent, IonButton, IonIcon, IonModal, IonButtons, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonSpinner } from '@ionic/react';
 import { RefresherEventDetail } from '@ionic/core';
 import { useAuth } from '../context/AuthContext';
 import { useStravaData } from '../context/StravaContext';
@@ -104,26 +104,40 @@ export const Home: React.FC = () => {
         <p><i>It blends duration × intensity to reflect total strain. 159 is a substantial load—likely a long or hard ride that will impact your CTL (fitness) and ATL (fatigue).</i></p>
     `;
 
-    return (
-        <IonPage>
-            <IonHeader><IonToolbar><IonTitle>Welcome{welcomeName ? `, ${welcomeName}` : ''}!</IonTitle></IonToolbar></IonHeader>
-            <IonContent className="ion-padding">
-                <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-                    <IonRefresherContent></IonRefresherContent>
-                </IonRefresher>
+    const renderContent = () => {
+        if (stravaLoading || loadingProfile) {
+            return (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <IonSpinner />
+                    <p>Loading home page...</p>
+                </div>
+            );
+        }
 
+        if (!isConnected) {
+            return (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <IonCard style={{ maxWidth: '400px', width: '100%' }}>
+                        <IonCardHeader>
+                            <IonCardTitle>Connect to Strava</IonCardTitle>
+                        </IonCardHeader>
+                        <IonCardContent style={{ textAlign: 'center' }}>
+                            <p>Connect your Strava account to see your performance data, recent activities, and get personalized coaching notes.</p>
+                            <IonButton routerLink="/settings">Connect to Strava</IonButton>
+                            {error && <p style={{ color: 'red', marginTop: '10px' }}>Error: {error}</p>}
+                        </IonCardContent>
+                    </IonCard>
+                </div>
+            );
+        }
+
+        return (
+            <>
                 <PerformanceCard />
 
-                <section style={{marginTop:16}}>
+                <section style={{ marginTop: 16 }}>
                     <h3>Recent Activities</h3>
-                    {stravaLoading && activities.length === 0 ? (
-                        <p>Loading activities...</p>
-                    ) : !isConnected ? (
-                        <>
-                            <p>Connect your Strava account from the Settings page.</p>
-                            {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-                        </>
-                    ) : activities.length > 0 ? (
+                    {activities.length > 0 ? (
                         <>
                             <IonList>
                                 {activities.map(activity => {
@@ -195,6 +209,19 @@ export const Home: React.FC = () => {
                         <p>No recent Strava activities found.</p>
                     )}
                 </section>
+            </>
+        );
+    };
+
+    return (
+        <IonPage>
+            <IonHeader><IonToolbar><IonTitle>Welcome{welcomeName ? `, ${welcomeName}` : ''}!</IonTitle></IonToolbar></IonHeader>
+            <IonContent className="ion-padding">
+                <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+                    <IonRefresherContent></IonRefresherContent>
+                </IonRefresher>
+
+                {renderContent()}
 
                 <IonModal
                     isOpen={showInfoModal}

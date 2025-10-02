@@ -16,8 +16,6 @@ import {
     IonSelect,
     IonSelectOption,
     IonCard,
-    IonCardHeader,
-    IonCardTitle,
     IonCardContent,
     IonSpinner,
     IonGrid,
@@ -95,7 +93,6 @@ const CYCLING_LEVEL_OPTIONS = ['Beginner', 'Intermediate', 'Advanced', 'Expert']
 const PRIMARY_DISCIPLINE_OPTIONS = ['Road', 'Gravel', 'Mountain', 'Track', 'Commuting', 'Touring'];
 const RIDE_TYPE_OPTIONS = ['Solo', 'Group', 'Training', 'Race', 'Social', 'Endurance'];
 const TERRAIN_OPTIONS = ['Flat', 'Hilly', 'Mountainous', 'Mixed', 'Gravel', 'Paved'];
-const SLEEP_QUALITY_OPTIONS = ['Excellent', 'Good', 'Fair', 'Poor'];
 const RISK_TOLERANCE_OPTIONS = ['High', 'Moderate', 'Low'];
 const CONFIDENCE_ZONES_OPTIONS = ['High', 'Medium', 'Low'];
 
@@ -352,13 +349,64 @@ export const Profile: React.FC = () => {
 
                     <CollapsibleCard title="Health & Lifestyle">
                         <IonList>
-                            <IonItem><IonLabel>Weight (kg)</IonLabel><IonInput type="number" value={profileData.health_lifestyle.weight} onIonChange={e => handleInputChange('health_lifestyle.weight', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Current FTP (W)</IonLabel><IonInput type="number" value={profileData.health_lifestyle.ftp} onIonChange={e => handleInputChange('health_lifestyle.ftp', e.detail.value, 'number')} /></IonItem>
-                            <IonItem><IonLabel>Max Heart Rate (bpm)</IonLabel><IonInput type="number" value={profileData.health_lifestyle.max_hr} onIonChange={e => handleInputChange('health_lifestyle.max_hr', e.detail.value, 'number')} /></IonItem>
-                            <IonItem style={{ '--color': 'var(--ion-color-dark-contrast)' }}><IonLabel>Sleep Quality</IonLabel><IonSelect value={profileData.health_lifestyle.sleep_quality} onIonChange={e => handleInputChange('health_lifestyle.sleep_quality', e.detail.value)}>{SLEEP_QUALITY_OPTIONS.map(o => (<IonSelectOption key={o} value={o}>{o}</IonSelectOption>))}</IonSelect></IonItem>
-                            <IonItem><IonLabel position="stacked">On-Bike Nutrition (comma-separated)</IonLabel><IonTextarea value={profileData.health_lifestyle.nutrition.on_bike.join(', ')} onIonChange={e => handleInputChange('health_lifestyle.nutrition.on_bike', e.detail.value, 'string[]')} /></IonItem>
-                            <IonItem><IonLabel position="stacked">Off-Bike Nutrition (comma-separated)</IonLabel><IonTextarea value={profileData.health_lifestyle.nutrition.off_bike.join(', ')} onIonChange={e => handleInputChange('health_lifestyle.nutrition.off_bike', e.detail.value, 'string[]')} /></IonItem>
-                            <IonItem><IonLabel position="stacked">Injury History (comma-separated)</IonLabel><IonTextarea value={profileData.health_lifestyle.injury_history.join(', ')} onIonChange={e => handleInputChange('health_lifestyle.injury_history', e.detail.value, 'string[]')} /></IonItem>
+                            {/* Inline number inputs */}
+                            <IonItem>
+                                <IonLabel position="fixed" style={{ minWidth: '140px' }}>Weight (kg)</IonLabel>
+                                <IonInput
+                                    inputmode="numeric"
+                                    type="number"
+                                    style={{ textAlign: 'right' }}
+                                    value={profileData.health_lifestyle.weight}
+                                    onIonChange={e => handleInputChange('health_lifestyle.weight', e.detail.value, 'number')}
+                                />
+                            </IonItem>
+
+                            <IonItem>
+                                <IonLabel position="fixed" style={{ minWidth: '140px' }}>Current FTP (W)</IonLabel>
+                                <IonInput
+                                    inputmode="numeric"
+                                    type="number"
+                                    style={{ textAlign: 'right' }}
+                                    value={profileData.health_lifestyle.ftp}
+                                    onIonChange={e => handleInputChange('health_lifestyle.ftp', e.detail.value, 'number')}
+                                />
+                            </IonItem>
+
+                            <IonItem>
+                                <IonLabel position="fixed" style={{ minWidth: '140px' }}>Max Heart Rate (bpm)</IonLabel>
+                                <IonInput
+                                    inputmode="numeric"
+                                    type="number"
+                                    style={{ textAlign: 'right' }}
+                                    value={profileData.health_lifestyle.max_hr}
+                                    onIonChange={e => handleInputChange('health_lifestyle.max_hr', e.detail.value, 'number')}
+                                />
+                            </IonItem>
+
+                            {/* Textareas with stacked labels */}
+                            <IonItem>
+                                <IonLabel position="stacked">On-Bike Nutrition (comma-separated)</IonLabel>
+                                <IonTextarea
+                                    value={profileData.health_lifestyle.nutrition.on_bike.join(', ')}
+                                    onIonChange={e => handleInputChange('health_lifestyle.nutrition.on_bike', e.detail.value, 'string[]')}
+                                />
+                            </IonItem>
+
+                            <IonItem>
+                                <IonLabel position="stacked">Off-Bike Nutrition (comma-separated)</IonLabel>
+                                <IonTextarea
+                                    value={profileData.health_lifestyle.nutrition.off_bike.join(', ')}
+                                    onIonChange={e => handleInputChange('health_lifestyle.nutrition.off_bike', e.detail.value, 'string[]')}
+                                />
+                            </IonItem>
+
+                            <IonItem>
+                                <IonLabel position="stacked">Injury History (comma-separated)</IonLabel>
+                                <IonTextarea
+                                    value={profileData.health_lifestyle.injury_history.join(', ')}
+                                    onIonChange={e => handleInputChange('health_lifestyle.injury_history', e.detail.value, 'string[]')}
+                                />
+                            </IonItem>
                         </IonList>
                     </CollapsibleCard>
 

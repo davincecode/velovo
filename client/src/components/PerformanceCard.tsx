@@ -4,13 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { UserProfile } from '../userProfile';
-import { IonSpinner, IonIcon, IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton } from '@ionic/react';
+import { IonSpinner, IonIcon, IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCardContent } from '@ionic/react';
 import { TrainingAnalyticsService, FitnessData } from '../services/TrainingAnalyticsService';
 import { helpCircleOutline, arrowBack } from 'ionicons/icons';
 
 export const PerformanceCard: React.FC = () => {
     const { user } = useAuth();
-    const { activities, loading: stravaLoading, stravaAccessToken } = useStravaData();
+    const { activities, loading: stravaLoading, stravaAccessToken, isConnected } = useStravaData();
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [fitnessData, setFitnessData] = useState<FitnessData | null>(null);
@@ -88,12 +88,41 @@ export const PerformanceCard: React.FC = () => {
         setShowFtpInfoModal(false);
     }, []);
 
-    if (stravaLoading || loadingProfile || currentFtp === null) {
+    if (stravaLoading || loadingProfile) {
         return (
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: 'center', padding: '20px' }}>
                 <IonSpinner />
                 <p>Loading Performance Data...</p>
             </div>
+        );
+    }
+
+    if (!isConnected) {
+        return (
+            <IonCard>
+                <IonCardHeader>
+                    <IonCardTitle>Performance Status</IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent style={{ textAlign: 'center' }}>
+                    <p>Connect to Strava to see your performance data and coaching notes.</p>
+                    <IonButton routerLink="/settings">Connect to Strava</IonButton>
+                </IonCardContent>
+            </IonCard>
+        );
+    }
+
+    if (currentFtp === null) {
+        return (
+            <IonCard>
+                <IonCardHeader>
+                    <IonCardTitle>Performance Status</IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent style={{ textAlign: 'center' }}>
+                    <p>Not enough data to calculate performance metrics.</p>
+                    <p>Please ensure your FTP is set in your profile and you have recent activities on Strava.</p>
+                    <IonButton routerLink="/profile">Go to Profile</IonButton>
+                </IonCardContent>
+            </IonCard>
         );
     }
 
