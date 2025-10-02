@@ -78,6 +78,7 @@ const calculateFitnessAndFatigue = (dailyLoads: DailyLoad[]): { ctl: number, atl
 // Generates an AI message based on the latest ride and fitness data.
 const generateAiMessage = (activity: Activity, ctl: number, atl: number, tsb: number, tss: number): string => {
     let message = `This ${activity.type} of ${Math.round(activity.distanceM / 1000)} km earned you ${tss} TSS. `;
+    let recoveryRecommendation = '';
 
     if (tsb > 5) {
         message += "You should be feeling fresh and recovered. It's a great time for a key workout or to push your limits.";
@@ -85,8 +86,14 @@ const generateAiMessage = (activity: Activity, ctl: number, atl: number, tsb: nu
         message += "You're in a productive training state. You're building fitness, but make sure to keep an eye on recovery.";
     } else if (tsb > -25) {
         message += "You're carrying significant fatigue. This is expected during a hard block, but ensure you have recovery planned soon.";
-    } else {
-        message += "You are very fatigued and likely need rest. Pushing too hard now could lead to overtraining. A recovery day is recommended.";
+        recoveryRecommendation = "1-2 recovery days are recommended.";
+    } else { // tsb <= -25
+        message += "You are very fatigued and likely need rest. Pushing too hard now could lead to overtraining.";
+        recoveryRecommendation = "2-3 recovery days or 48-72 hours of rest are highly recommended.";
+    }
+
+    if (recoveryRecommendation) {
+        message += ` ${recoveryRecommendation}`;
     }
 
     message += ` Your current fitness (CTL) is ${ctl} and your fatigue (ATL) is ${atl}.`;
