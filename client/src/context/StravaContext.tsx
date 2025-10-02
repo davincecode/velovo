@@ -6,7 +6,7 @@ import { UserProfile } from '../userProfile';
 import { StravaService, Activity } from '../services/StravaService';
 
 const ACTIVITIES_PER_PAGE = 50; // Number of activities to fetch per API call
-const FETCH_DAYS_AGO = 50;      // We need enough data for a 42-day CTL, so 50 days is a safe buffer.
+const FETCH_DAYS_AGO = 42;      // We need enough data for a 42-day CTL, so 50 days is a safe buffer.
 
 interface StravaData {
     activities: Activity[];

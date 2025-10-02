@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonList, IonItem, IonLabel, IonModal, useIonAlert, IonRefresher, IonRefresherContent } from '@ionic/react';
+import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonList, IonItem, IonLabel, IonRefresher, IonRefresherContent } from '@ionic/react';
 import { RefresherEventDetail } from '@ionic/core';
 import { useAuth } from '../context/AuthContext';
 import { useStravaData } from '../context/StravaContext';
-import { StravaService, Activity } from '../services/StravaService';
 import { PerformanceCard } from '../components/PerformanceCard';
 import '../theme/global.css';
 import { doc, getDoc } from 'firebase/firestore';
@@ -14,13 +13,8 @@ const formatTime = (seconds: number) => new Date(seconds * 1000).toISOString().s
 
 export const Home: React.FC = () => {
     const { user } = useAuth();
-    // Removed loadMoreActivities and hasMoreActivities as we are no longer lazy loading
-    const { activities, isConnected, error, loading: stravaLoading, stravaAccessToken, refreshStravaData } = useStravaData();
+    const { activities, isConnected, error, loading: stravaLoading, refreshStravaData } = useStravaData();
     const [profileName, setProfileName] = useState<string>('');
-    const [showModal, setShowModal] = useState(false);
-    const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
-    const [modalLoading, setModalLoading] = useState(false);
-    const [presentAlert] = useIonAlert();
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -47,26 +41,6 @@ export const Home: React.FC = () => {
         event.detail.complete();
     };
 
-    const openActivityDetails = async (activity: Activity) => {
-        if (!stravaAccessToken) {
-            presentAlert({ header: 'Error', message: 'Strava access token not available. Please reconnect Strava.', buttons: ['OK'] });
-            return;
-        }
-        setModalLoading(true);
-        try {
-            const detailedActivity = await StravaService.getActivityDetails(stravaAccessToken, activity.id);
-            setSelectedActivity(detailedActivity);
-            setShowModal(true);
-        } catch (detailError) {
-            console.error('Error fetching activity details:', detailError);
-            presentAlert({ header: 'Error', message: 'Failed to load activity details.', buttons: ['OK'] });
-            setSelectedActivity(activity);
-            setShowModal(true);
-        } finally {
-            setModalLoading(false);
-        }
-    };
-
     const welcomeName = profileName || user?.name;
 
     return (
@@ -76,10 +50,6 @@ export const Home: React.FC = () => {
                 <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
                     <IonRefresherContent></IonRefresherContent>
                 </IonRefresher>
-
-                <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
-                    {/* Modal Content will be added here */}
-                </IonModal>
 
                 <PerformanceCard />
                 
@@ -96,7 +66,7 @@ export const Home: React.FC = () => {
                         <>
                             <IonList>
                                 {activities.map(activity => (
-                                    <IonItem button key={activity.id} onClick={() => openActivityDetails(activity)} style={{ border: '1px solid var(--ion-color-medium)', borderRadius: '5px', marginBottom: '10px' }}>
+                                    <IonItem key={activity.id} style={{ border: '1px solid var(--ion-color-medium)', borderRadius: '5px', marginBottom: '10px' }}>
                                         <IonLabel>
                                             <h2>{activity.name}</h2>
                                             <small>{new Date(activity.startDate).toLocaleDateString()}</small>
@@ -117,7 +87,7 @@ export const Home: React.FC = () => {
                                 ))}
                             </IonList>
                             <div style={{ textAlign: 'center', color: 'var(--ion-color-medium-shade)', fontSize: '0.8rem', padding: '1rem' }}>
-                                <p>Only the last 50 days of activities are shown for analytics purposes.</p>
+                                <p>Showing {activities.length} activities from the last 42 days.</p>
                             </div>
                         </>
                     ) : (
