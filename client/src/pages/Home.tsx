@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonList, IonItem, IonLabel, IonRefresher, IonRefresherContent, IonButton, IonIcon, IonModal, IonButtons, IonBackButton } from '@ionic/react';
+import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonList, IonItem, IonLabel, IonRefresher, IonRefresherContent, IonButton, IonIcon, IonModal, IonButtons } from '@ionic/react';
 import { RefresherEventDetail } from '@ionic/core';
 import { useAuth } from '../context/AuthContext';
 import { useStravaData } from '../context/StravaContext';
@@ -171,14 +171,13 @@ export const Home: React.FC = () => {
                                                     View on Strava
                                                 </IonButton>
                                             </IonLabel>
-                                            {/* Moved IonIcon to upper right corner of IonItem */}
                                             <IonIcon
                                                 icon={helpCircleOutline}
                                                 onClick={handleInfoIconClick}
                                                 style={{
                                                     position: 'absolute',
-                                                    top: '10px', // Adjust as needed
-                                                    right: '10px', // Adjust as needed
+                                                    top: '10px',
+                                                    right: '10px',
                                                     fontSize: '24px',
                                                     cursor: 'pointer',
                                                     zIndex: 1

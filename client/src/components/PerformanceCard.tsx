@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useStravaData } from '../context/StravaContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { UserProfile } from '../userProfile';
-import { IonSpinner } from '@ionic/react';
+import { IonSpinner, IonIcon, IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton } from '@ionic/react';
 import { TrainingAnalyticsService, FitnessData } from '../services/TrainingAnalyticsService';
+import { helpCircleOutline, arrowBack } from 'ionicons/icons';
 
 export const PerformanceCard: React.FC = () => {
     const { user } = useAuth();
@@ -15,6 +16,7 @@ export const PerformanceCard: React.FC = () => {
     const [fitnessData, setFitnessData] = useState<FitnessData | null>(null);
     const [aiMessage, setAiMessage] = useState<string>('');
     const [currentFtp, setCurrentFtp] = useState<number | null>(null);
+    const [showFtpInfoModal, setShowFtpInfoModal] = useState(false);
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -82,6 +84,14 @@ export const PerformanceCard: React.FC = () => {
         }
     }, [activities, currentFtp]);
 
+    const handleFtpInfoClick = useCallback(() => {
+        setShowFtpInfoModal(true);
+    }, []);
+
+    const handleCloseFtpInfoModal = useCallback(() => {
+        setShowFtpInfoModal(false);
+    }, []);
+
     if (stravaLoading || loadingProfile || currentFtp === null) {
         return (
             <div style={{ textAlign: 'center' }}>
@@ -93,14 +103,35 @@ export const PerformanceCard: React.FC = () => {
 
     const maxHr = userProfile && userProfile.health_lifestyle ? userProfile.health_lifestyle.max_hr : undefined;
 
+    const ftpExplanationHtml = `
+        <p>Your Functional Threshold Power (FTP) is determined in one of two ways:</p>
+        <ol>
+            <li><b>From your profile:</b> If you have manually entered an FTP in your profile settings, this value will be used.</li>
+            <li><b>Estimated from Strava activities:</b> If no FTP is set in your profile, we estimate it from your recent Strava activities. This estimation is based on a 20-minute maximal effort within a ride, or a similar sustained high-power output.</li>
+            <li><b>Default Fallback:</b> If neither of the above provides an FTP, a default value of 183 W is used.</li>
+        </ol>
+        <p>For the most accurate performance metrics, ensure your FTP is up-to-date in your profile settings.</p>
+    `;
+
+    const HtmlContent: React.FC<{ html: string }> = ({ html }) => {
+        return <div dangerouslySetInnerHTML={{ __html: html }} />;
+    };
+
     return (
         <section>
             <h3>Performance Status</h3>
-            <div style={{ marginBottom: '1rem' }}>
-                <p><strong>Current FTP:</strong> {currentFtp ? `${currentFtp} W` : 'N/A'}</p>
-                <p><strong>Current Max HR:</strong> {maxHr ? `${maxHr} bpm` : 'N/A'}</p>
-                <p><strong>Current training status:</strong></p>
-                <ul style={{ listStyle: 'none', paddingLeft: '1rem' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
+                <p className="ftp-highlight" style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span><strong>Current FTP:</strong> {currentFtp ? `${currentFtp} W` : 'N/A'}</span>
+                    <IonIcon
+                        icon={helpCircleOutline}
+                        onClick={handleFtpInfoClick}
+                        style={{ fontSize: '1.5em', verticalAlign: 'middle', cursor: 'pointer' }}
+                    />
+                </p>
+                <p style={{ margin: '0' }}><strong>Current Max HR:</strong> {maxHr ? `${maxHr} bpm` : 'N/A'}</p>
+                <p style={{ margin: '0' }}><strong>Current training status:</strong></p>
+                <ul style={{ margin:'6px', listStyle: 'none', paddingLeft: '1rem' }}>
                     <li>a. 🚴 Fitness (CTL): {fitnessData?.ctl ?? 'N/A'}</li>
                     <li>b. 💤 Fatigue (ATL): {fitnessData?.atl ?? 'N/A'}</li>
                     <li>c. ⚖️ Balance (TSB): {fitnessData?.tsb ?? 'N/A'}</li>
@@ -108,7 +139,7 @@ export const PerformanceCard: React.FC = () => {
             </div>
 
             <div style={{ marginBottom: '1rem' }}>
-                <p><strong>AI generated comments:</strong></p>
+                <p style={{ margin: '6px' }}><strong>Coaching Notes:</strong></p>
                 <div style={{ border: '1px solid var(--ion-color-medium)', borderRadius: '5px', padding: '0.5rem', fontSize: '0.9rem' }}>
                     <p>{aiMessage || 'Not enough data to generate comments.'}</p>
                 </div>
@@ -119,6 +150,25 @@ export const PerformanceCard: React.FC = () => {
                 <p><strong>Fitness (CTL):</strong> Reflects your training load over the last 42 days. A higher number indicates greater fitness.</p>
                 <p><strong>Fatigue (ATL):</strong> Reflects your training load over the last 7 days. A high number suggests recent hard training.</p>
             </div>
+
+            <IonModal
+                isOpen={showFtpInfoModal}
+                onDidDismiss={handleCloseFtpInfoModal}
+            >
+                <IonHeader>
+                    <IonToolbar>
+                        <IonButtons slot="start">
+                            <IonButton onClick={handleCloseFtpInfoModal}>
+                                <IonIcon icon={arrowBack} />
+                            </IonButton>
+                        </IonButtons>
+                        <IonTitle>FTP Explanation</IonTitle>
+                    </IonToolbar>
+                </IonHeader>
+                <IonContent className="ion-padding">
+                    <HtmlContent html={ftpExplanationHtml} />
+                </IonContent>
+            </IonModal>
         </section>
     );
 };

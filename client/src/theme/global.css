@@ -110,3 +110,10 @@ ion-item.custom-input-item.input-focused {
     --border-width: 0 0 2px 0 !important;
     --border-color: black !important;
 }
+
+.ftp-highlight {
+    background: #000000;
+    padding: 10px;
+    color: #fff;
+    border-radius: 5px;
+}
