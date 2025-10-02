@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonButton, IonList, IonItem, IonLabel, IonModal, IonButtons, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, useIonAlert, IonRefresher, IonRefresherContent } from '@ionic/react';
+import { IonPage, IonHeader, IonTitle, IonToolbar, IonContent, IonList, IonItem, IonLabel, IonModal, useIonAlert, IonRefresher, IonRefresherContent } from '@ionic/react';
 import { RefresherEventDetail } from '@ionic/core';
 import { useAuth } from '../context/AuthContext';
 import { useStravaData } from '../context/StravaContext';
 import { StravaService, Activity } from '../services/StravaService';
 import { PerformanceCard } from '../components/PerformanceCard';
-import { close } from 'ionicons/icons';
 import '../theme/global.css';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -15,7 +14,8 @@ const formatTime = (seconds: number) => new Date(seconds * 1000).toISOString().s
 
 export const Home: React.FC = () => {
     const { user } = useAuth();
-    const { activities, isConnected, error, loading: stravaLoading, stravaAccessToken, refreshStravaData, loadMoreActivities, hasMoreActivities } = useStravaData();
+    // Removed loadMoreActivities and hasMoreActivities as we are no longer lazy loading
+    const { activities, isConnected, error, loading: stravaLoading, stravaAccessToken, refreshStravaData } = useStravaData();
     const [profileName, setProfileName] = useState<string>('');
     const [showModal, setShowModal] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -45,11 +45,6 @@ export const Home: React.FC = () => {
     const handleRefresh = async (event: CustomEvent<RefresherEventDetail>) => {
         await refreshStravaData();
         event.detail.complete();
-    };
-
-    const handleInfiniteScroll = async (event: CustomEvent<void>) => {
-        await loadMoreActivities();
-        (event.target as HTMLIonInfiniteScrollElement).complete();
     };
 
     const openActivityDetails = async (activity: Activity) => {
@@ -83,7 +78,7 @@ export const Home: React.FC = () => {
                 </IonRefresher>
 
                 <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
-                    {/* Modal Content */}
+                    {/* Modal Content will be added here */}
                 </IonModal>
 
                 <PerformanceCard />
@@ -121,9 +116,9 @@ export const Home: React.FC = () => {
                                     </IonItem>
                                 ))}
                             </IonList>
-                            <IonInfiniteScroll threshold="100px" disabled={!hasMoreActivities} onIonInfinite={handleInfiniteScroll}>
-                                <IonInfiniteScrollContent loadingSpinner="bubbles" loadingText="Loading more activities..."></IonInfiniteScrollContent>
-                            </IonInfiniteScroll>
+                            <div style={{ textAlign: 'center', color: 'var(--ion-color-medium-shade)', fontSize: '0.8rem', padding: '1rem' }}>
+                                <p>Only the last 50 days of activities are shown for analytics purposes.</p>
+                            </div>
                         </>
                     ) : (
                         <p>No recent Strava activities found.</p>

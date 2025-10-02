@@ -9,6 +9,7 @@ export interface Activity {
     startDate: string;
     elevationGainM: number;
     averageWatts?: number;
+    weightedAverageWatts?: number; // Normalized Power equivalent
     maxWatts?: number;
     averageHeartrate?: number;
     kilojoules?: number;
@@ -42,6 +43,7 @@ interface StravaRawActivity {
     start_date: string;
     total_elevation_gain: number;
     average_watts?: number;
+    weighted_average_watts?: number;
     max_watts?: number;
     average_heartrate?: number;
     kilojoules?: number;
@@ -57,7 +59,7 @@ interface StravaRawActivity {
 
 interface StravaServiceType {
     exchangeToken(clientId: string, clientSecret: string, code: string): Promise<StravaTokenResponse>;
-    getActivities(accessToken: string, page: number, perPage: number): Promise<Activity[]>;
+    getActivities(accessToken: string, page: number, perPage: number, after?: number): Promise<Activity[]>;
     getActivityDetails(accessToken: string, activityId: string): Promise<Activity>;
 }
 
@@ -105,6 +107,7 @@ export const StravaService: StravaServiceType = {
             startDate: a.start_date,
             elevationGainM: a.total_elevation_gain,
             averageWatts: a.average_watts,
+            weightedAverageWatts: a.weighted_average_watts,
             maxWatts: a.max_watts,
             averageHeartrate: a.average_heartrate,
             kilojoules: a.kilojoules,
@@ -118,8 +121,12 @@ export const StravaService: StravaServiceType = {
         };
     },
 
-    async getActivities(accessToken: string, page: number, perPage: number): Promise<Activity[]> {
-        const res = await fetch(`${API_BASE}/athlete/activities?page=${page}&per_page=${perPage}`, {
+    async getActivities(accessToken: string, page: number, perPage: number, after?: number): Promise<Activity[]> {
+        let url = `${API_BASE}/athlete/activities?page=${page}&per_page=${perPage}`;
+        if (after) {
+            url += `&after=${after}`;
+        }
+        const res = await fetch(url, {
             headers: { Authorization: `Bearer ${accessToken}` }
         });
         if (!res.ok) {
@@ -127,6 +134,7 @@ export const StravaService: StravaServiceType = {
             throw new Error('Failed to fetch Strava activities');
         }
         const data: StravaRawActivity[] = await res.json();
+        console.log('Fetched Strava Activities:', JSON.stringify(data, null, 2));
 
         return data.map((a: StravaRawActivity): Activity => {
             return {
@@ -139,6 +147,7 @@ export const StravaService: StravaServiceType = {
                 startDate: a.start_date,
                 elevationGainM: a.total_elevation_gain,
                 averageWatts: a.average_watts,
+                weightedAverageWatts: a.weighted_average_watts, // Correct mapping
                 maxWatts: a.max_watts,
                 averageHeartrate: a.average_heartrate,
                 kilojoules: a.kilojoules,
